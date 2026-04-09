@@ -1,0 +1,73 @@
+package com.tems.backend.service;
+
+import com.tems.backend.entity.Approval;
+import com.tems.backend.entity.Expense;
+import com.tems.backend.repository.ApprovalRepository;
+import com.tems.backend.repository.ExpenseRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class ApprovalService {
+
+    private final ApprovalRepository approvalRepository;
+    private final ExpenseRepository expenseRepository;
+
+    public List<Approval> getPendingApprovalsForUser(Integer userId) {
+        return approvalRepository.findByUser_UserIdAndStatus(userId, "PENDING");
+    }
+
+    @Transactional
+    public Expense updateApprovalStatus(Integer expenseId, Integer userId, String status) {
+        // Find all approvals for this expense
+        List<Approval> approvals = approvalRepository.findByExpense_ExpenseId(expenseId);
+        
+        // Find the specific approval ticket that this user owns
+        Approval targetApproval = null;
+        for (Approval a : approvals) {
+            if (a.getUser().getUserId().equals(userId)) {
+                targetApproval = a;
+                break;
+            }
+        }
+        
+        if (targetApproval == null) {
+            throw new IllegalArgumentException("No approval ticket exists for this user on this expense.");
+        }
+        
+        // Update their specific ticket
+        targetApproval.setStatus(status);
+        approvalRepository.save(targetApproval);
+        
+        Expense expense = targetApproval.getExpense();
+
+        if (status.equals("OBJECTED")) {
+            // Instant failure propagation
+            expense.setStatus("OBJECTED");
+            return expenseRepository.save(expense);
+        }
+
+        if (status.equals("APPROVED")) {
+            // Check if ALL tickets are now APPROVED
+            boolean allApproved = true;
+            for (Approval a : approvals) {
+                // If it's the one we just updated, count it as APPROVED
+                String currentStatus = a.getUser().getUserId().equals(userId) ? status : a.getStatus();
+                if (!currentStatus.equals("APPROVED")) {
+                    allApproved = false;
+                    break;
+                }
+            }
+            if (allApproved) {
+                expense.setStatus("APPROVED");
+                return expenseRepository.save(expense);
+            }
+        }
+
+        return expense;
+    }
+}

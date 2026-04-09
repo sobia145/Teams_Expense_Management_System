@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEMS – 9/10 Database Schema</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@400;600;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #f0f4f8;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+
+  .page-header {
+    background: linear-gradient(135deg, #0e1c36 0%, #1e3a6a 100%);
+    color: #fff;
+    text-align: center;
+    padding: 24px 20px 18px;
+    border-bottom: 4px solid #f29c38;
+    position: relative;
+    overflow: hidden;
+  }
+  .page-header h1 {font-size: 1.8rem; font-weight: 900; letter-spacing: 3px; text-transform: uppercase;}
+  .page-header p {font-size: .85rem; color: #a8c4e8; margin-top: 6px; letter-spacing: 2px;}
+
+  /* ── Canvas area ── */
+  .canvas {
+    position: relative;
+    width: 1580px;
+    height: 1450px;
+    margin: 30px auto;
+    background: #fff;
+    border: 1px solid #ccc;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  }
+
+  /* ── Table card ── */
+  .tbl {
+    position: absolute;
+    background: #fff;
+    border-radius: 6px;
+    border: 1.5px solid #bdcddf;
+    box-shadow: 0 4px 12px rgba(30,60,120,.08);
+    width: 310px;
+    font-size: 11.5px;
+    overflow: hidden;
+  }
+  .tbl-header {
+    background: linear-gradient(135deg, #1e3a6a 0%, #2f5699 100%);
+    color: #fff; font-weight: 700; font-size: 12.5px;
+    letter-spacing: 1.2px; padding: 7px 12px;
+    text-align: center; text-transform: uppercase;
+  }
+  .tbl-row {
+    display: grid; grid-template-columns: 1fr 105px 60px;
+    border-bottom: 1px solid #eef2f7; align-items: center;
+  }
+  .tbl-row:last-child { border-bottom: none; }
+  .tbl-row.pk-row { background: #fdfaf4; }
+  .tbl-row .col-name { padding: 4px 6px 4px 10px; font-family: 'Courier Prime', monospace; font-weight: 700; color: #1a2744; }
+  .tbl-row .col-type { padding: 4px; font-family: 'Courier Prime', monospace; font-size: 10px; color: #557ba8; }
+  .tbl-row .col-flag { padding: 4px 6px 4px 2px; text-align: right; display: flex; justify-content: flex-end; gap: 3px; flex-wrap: wrap;}
+  
+  .badge { padding: 2px 4px; border-radius: 3px; font-size: 9px; font-weight: 700; display: inline-block;}
+  .badge-pk { background: #ffc107; color: #5a3a00; }
+  .badge-fk { background: #fd7e14; color: #fff; }
+  .badge-n  { background: #e8f0fe; color: #3a5a9a; }
+  .badge-uq { background: #6f42c1; color: #fff; }
+  .badge-idx { background: #20c997; color: #fff; }
+  
+  .tbl-section {
+    background: #e9eff5; font-size: 9.5px; font-weight: 700;
+    color: #4a6fa5; padding: 4px 10px; text-transform: uppercase; text-align: center; border-bottom: 1px solid #d4dfea;
+  }
+
+  /* ── SVG connector layer ── */
+  svg.connectors { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+  .conn-line { stroke: #5a8bc7; stroke-width: 2.2; fill: none; }
+
+  /* ── Legend ── */
+  .legend {
+    position: fixed; bottom: 80px; right: 30px; z-index: 100;
+    background: white; border: 1px solid #a8c4e8; border-radius: 6px;
+    padding: 10px 14px; box-shadow: 0 8px 24px rgba(30,60,120,.15); font-size: 11px;
+  }
+  .legend h4 { color: #1e3a6a; margin-bottom: 6px; border-bottom: 1px solid #eee; padding-bottom: 3px; font-weight: 700;}
+  .legend-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+
+  /* Print specific */
+  @media print {
+    @page { size: A4 landscape; margin: 0; }
+    body, html { margin: 0; padding: 0; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; overflow: hidden !important; }
+    .page-header { display: none; }
+    .btn-print { display: none !important; }
+    .legend { position: absolute; bottom: 40px; right: 40px; top: auto; left: auto; box-shadow: none; width: auto; font-size: 11px; padding: 10px 14px;}
+    
+    .canvas {
+      margin: 0; border: none; box-shadow: none;
+      transform: scale(0.48); /* Fits enormous 1600x1500 perfectly onto Landscape A4 */
+      transform-origin: 20px 20px;
+    }
+  }
+
+  .btn-print {
+    position: fixed; bottom: 20px; right: 30px; background: #0e1c36; color: white; border: none;
+    padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(14, 28, 54, 0.4); z-index: 9999;
+  }
+</style>
+</head>
+<body>
+
+<button class="btn-print" onclick="window.print()">Export to PDF</button>
+
+<div class="page-header">
+  <h1>Team Expense Management System</h1>
+  <p>Database Schema Design</p>
+</div>
+
+<!-- ==============================================
+     CANVAS GRID: (1600 W x 1450 H)
+     Col1: 40, Col2: 440, Col3: 840, Col4: 1240
+=============================================== -->
+<div class="canvas">
+
+<svg class="connectors">
+  <defs>
+    <marker id="dot" markerWidth="6" markerHeight="6" refX="3" refY="3"><circle cx="3" cy="3" r="2.5" fill="#3a7bc8"/></marker>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="0" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#3a7bc8" /></marker>
+  </defs>
+
+  <!-- 1. users -> groups -->
+  <path class="conn-line" d="M 350 150 L 440 150" marker-start="url(#dot)" marker-end="url(#arrow)"/>
+  
+  <!-- 2. groups -> settlements (Up and across top margin) -->
+  <path class="conn-line" d="M 600 80 L 600 40 L 1400 40 L 1400 80" marker-start="url(#dot)" marker-end="url(#arrow)"/>
+
+  <!-- 3. categories -> expenses (Down the Col2-3 gap x=800) -->
+  <path class="conn-line" d="M 840 110 L 800 110 L 800 700 L 750 700" marker-start="url(#dot)" marker-end="url(#arrow)"/>
+
+  <!-- 4. categories -> budgets (Vertical Col 3) -->
+  <path class="conn-line" d="M 995 150 L 995 360" marker-start="url(#dot)" marker-end="url(#arrow)"/>
+
+  <!-- 5. groups -> group_members (Down Col1-2 gap x=390) -->
+  <path class="conn-line" d="M 440 200 L 390 200 L 390 700 L 350 700" marker-start="url(#dot)" marker-end="url(#arrow)"/>
+
+  <!-- 6. groups -> subgroups (Vertical Col 2) -->
+  <path class="conn-line" d="M 595 240 L 595 380" marker-start="url(#dot)" marker-end="url(#arrow)"/>
+
+  <!-- 7. subgroups -> subgroup_members (Horizontal Col 2 to Col 1) -->
+  <path class="conn-line" d="M 440 420 L 350 420" marker-start="url(#dot)" marker-end="url(#arrow)"/>
+
+  <!-- 8. subgroups -> expenses (Vertical down Col 2) -->
+  <path class="conn-line" d="M 595 505 L 595 680" marker-start="url(#dot)" marker-end="url(#arrow)"/>
+
+  <!-- 9. expenses -> expense_splits (Vertical Col 2) -->
+  <path class="conn-line" d="M 595 1005 L 595 1140" marker-start="url(#dot)" marker-end="url(#arrow)"/>
+
+  <!-- 10. budgets -> budget_alerts (Vertical Col 3) -->
+  <path class="conn-line" d="M 995 510 L 995 680" marker-start="url(#dot)" marker-end="url(#arrow)"/>
+
+  <!-- 11. expenses -> approvals (Down Col2-3 gap x=790) -->
+  <path class="conn-line" d="M 750 850 L 790 850 L 790 1050 L 840 1050" marker-start="url(#dot)" marker-end="url(#arrow)"/>
+
+  <!-- 12. settlements -> settlement_details (Vertical Col 4) -->
+  <path class="conn-line" d="M 1395 285 L 1395 380" marker-start="url(#dot)" marker-end="url(#arrow)"/>
+
+  <!-- 13. expenses -> settlement_details (Cross horizontal at y=900 through Gap 3, up Gap 4 to y=500) -->
+  <path class="conn-line" d="M 750 900 L 1180 900 L 1180 500 L 1240 500" marker-start="url(#dot)" marker-end="url(#arrow)"/>
+
+  <!-- 14. history_log -> groups (Up the left outer margin) -->
+  <path class="conn-line" d="M 40 1100 L 20 1100 L 20 120 L 440 120" marker-start="url(#dot)" marker-end="url(#arrow)"/>
+
+</svg>
+
+<div class="legend">
+  <h4>Legend</h4>
+  <div class="legend-row"><span class="badge badge-pk">PK</span><span>Primary Key</span></div>
+  <div class="legend-row"><span class="badge badge-fk">FK</span><span>Foreign Key / CASCADE</span></div>
+  <div class="legend-row"><span class="badge badge-uq">UQ</span><span>Unique Constraint</span></div>
+  <div class="legend-row"><span class="badge badge-idx">IDX</span><span>Explicit DB Index</span></div>
+  <div class="legend-row"><span class="badge badge-n">N</span><span>NOT NULL</span></div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     COLUMN 1 (x=40) 
+══════════════════════════════════════════ -->
+<div class="tbl" style="top:80px; left:40px;">
+  <div class="tbl-header">👤 users</div>
+  <div class="tbl-row pk-row"><div class="col-name">user_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-pk">PK</span></div></div>
+  <div class="tbl-row"><div class="col-name">email</div><div class="col-type">VARCHAR(150)</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-uq">UQ</span></div></div>
+  <div class="tbl-row"><div class="col-name">name</div><div class="col-type">VARCHAR(100)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-row"><div class="col-name">password_hash</div><div class="col-type">VARCHAR(255)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-row"><div class="col-name">is_deleted</div><div class="col-type">BOOLEAN</div><div class="col-flag"></div></div>
+  <div class="tbl-row"><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-section">Feature: Soft Delete Active</div>
+</div>
+
+<div class="tbl" style="top:380px; left:40px;">
+  <div class="tbl-header">🔗 subgroup_members</div>
+  <div class="tbl-row pk-row"><div class="col-name">id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-pk">PK</span></div></div>
+  <div class="tbl-row"><div class="col-name">subgroup_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">user_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-section">CONSTRAINT UQ(subgroup_id, user_id)</div>
+</div>
+
+<div class="tbl" style="top:660px; left:40px;">
+  <div class="tbl-header">🔗 group_members</div>
+  <div class="tbl-row pk-row"><div class="col-name">member_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-pk">PK</span></div></div>
+  <div class="tbl-row"><div class="col-name">group_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">user_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">role</div><div class="col-type">VARCHAR(50)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-row"><div class="col-name">joined_at</div><div class="col-type">TIMESTAMP</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-section">CONSTRAINT UQ(group_id, user_id)</div>
+</div>
+
+<div class="tbl" style="top:1050px; left:40px;">
+  <div class="tbl-header">📋 history_log</div>
+  <div class="tbl-row pk-row"><div class="col-name">log_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-pk">PK</span></div></div>
+  <div class="tbl-row"><div class="col-name">group_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-idx">IDX</span></div></div>
+  <div class="tbl-row"><div class="col-name">entity_type</div><div class="col-type">VARCHAR(50)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-row"><div class="col-name">action</div><div class="col-type">VARCHAR(100)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-row"><div class="col-name">new_value</div><div class="col-type">JSON</div><div class="col-flag"></div></div>
+  <div class="tbl-row"><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-section">Driven by Triggers / Java Transactions</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     COLUMN 2 (x=440)
+══════════════════════════════════════════ -->
+<div class="tbl" style="top:80px; left:440px;">
+  <div class="tbl-header">👥 groups</div>
+  <div class="tbl-row pk-row"><div class="col-name">group_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-pk">PK</span></div></div>
+  <div class="tbl-row"><div class="col-name">name</div><div class="col-type">VARCHAR(150)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-row"><div class="col-name">currency</div><div class="col-type">VARCHAR(10)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-row"><div class="col-name">created_by</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">is_deleted</div><div class="col-type">BOOLEAN</div><div class="col-flag"></div></div>
+</div>
+
+<div class="tbl" style="top:380px; left:440px;">
+  <div class="tbl-header">🔖 subgroups</div>
+  <div class="tbl-row pk-row"><div class="col-name">subgroup_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-pk">PK</span></div></div>
+  <div class="tbl-row"><div class="col-name">group_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">name</div><div class="col-type">VARCHAR(100)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-section">e.g. "Roadtrip Drivers", "Housemates"</div>
+</div>
+
+<div class="tbl" style="top:680px; left:440px;">
+  <div class="tbl-header">💸 expenses</div>
+  <div class="tbl-row pk-row"><div class="col-name">expense_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-pk">PK</span></div></div>
+  <div class="tbl-row"><div class="col-name">group_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span><span class="badge badge-idx">IDX</span></div></div>
+  <div class="tbl-row"><div class="col-name">subgroup_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">paid_by</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">category_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">title</div><div class="col-type">VARCHAR(255)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-row"><div class="col-name">total_amount</div><div class="col-type">DECIMAL(10,2)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-row"><div class="col-name">status</div><div class="col-type">VARCHAR(50)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-row"><div class="col-name">expense_date</div><div class="col-type">DATE</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-idx">IDX</span></div></div>
+  <div class="tbl-row"><div class="col-name">is_deleted</div><div class="col-type">BOOLEAN</div><div class="col-flag"></div></div>
+  <div class="tbl-row"><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-section">CHECK (total_amount > 0)</div>
+</div>
+
+<div class="tbl" style="top:1140px; left:440px;">
+  <div class="tbl-header">✂️ expense_splits</div>
+  <div class="tbl-row pk-row"><div class="col-name">split_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-pk">PK</span></div></div>
+  <div class="tbl-row"><div class="col-name">expense_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">user_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span><span class="badge badge-idx">IDX</span></div></div>
+  <div class="tbl-row"><div class="col-name">amount_owed</div><div class="col-type">DECIMAL(10,2)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-row"><div class="col-name">is_settled</div><div class="col-type">BOOLEAN</div><div class="col-flag"></div></div>
+  <div class="tbl-section">CHECK (amount_owed >= 0)</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     COLUMN 3 (x=840)
+══════════════════════════════════════════ -->
+<div class="tbl" style="top:80px; left:840px;">
+  <div class="tbl-header">🏷️ categories</div>
+  <div class="tbl-row pk-row"><div class="col-name">category_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-pk">PK</span></div></div>
+  <div class="tbl-row"><div class="col-name">name</div><div class="col-type">VARCHAR(100)</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-uq">UQ</span></div></div>
+</div>
+
+<div class="tbl" style="top:360px; left:840px;">
+  <div class="tbl-header">💰 budgets</div>
+  <div class="tbl-row pk-row"><div class="col-name">budget_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-pk">PK</span></div></div>
+  <div class="tbl-row"><div class="col-name">group_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">category_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">limit_amount</div><div class="col-type">DECIMAL(10,2)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-row"><div class="col-name">period</div><div class="col-type">VARCHAR(50)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-section">CONSTRAINT UQ(grp, ctgry, period)</div>
+</div>
+
+<div class="tbl" style="top:680px; left:840px;">
+  <div class="tbl-header">🔔 budget_alerts</div>
+  <div class="tbl-row pk-row"><div class="col-name">alert_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-pk">PK</span></div></div>
+  <div class="tbl-row"><div class="col-name">budget_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">excess_amt</div><div class="col-type">DECIMAL(10,2)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-row"><div class="col-name">triggered_at</div><div class="col-type">TIMESTAMP</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-section">Dynamic Join for Live Analytics</div>
+</div>
+
+<div class="tbl" style="top:980px; left:840px;">
+  <div class="tbl-header">✅ approvals</div>
+  <div class="tbl-row pk-row"><div class="col-name">approval_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-pk">PK</span></div></div>
+  <div class="tbl-row"><div class="col-name">expense_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">user_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">action</div><div class="col-type">VARCHAR(50)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-row"><div class="col-name">status</div><div class="col-type">VARCHAR(50)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-row"><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     COLUMN 4 (x=1240)
+══════════════════════════════════════════ -->
+<div class="tbl" style="top:80px; left:1240px;">
+  <div class="tbl-header">🤝 settlements</div>
+  <div class="tbl-row pk-row"><div class="col-name">settlmnt_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-pk">PK</span></div></div>
+  <div class="tbl-row"><div class="col-name">group_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">payer_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">payee_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">amount</div><div class="col-type">DECIMAL(10,2)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-row"><div class="col-name">status</div><div class="col-type">VARCHAR(50)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-row"><div class="col-name">settled_at</div><div class="col-type">TIMESTAMP</div><div class="col-flag"></div></div>
+  <div class="tbl-section">CHECK (amount > 0)</div>
+</div>
+
+<div class="tbl" style="top:380px; left:1240px;">
+  <div class="tbl-header">🔗 settlement_details</div>
+  <div class="tbl-row pk-row"><div class="col-name">id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-pk">PK</span></div></div>
+  <div class="tbl-row"><div class="col-name">settlement_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">expense_id</div><div class="col-type">INT</div><div class="col-flag"><span class="badge badge-n">N</span><span class="badge badge-fk">FK</span></div></div>
+  <div class="tbl-row"><div class="col-name">allocated</div><div class="col-type">DECIMAL(10,2)</div><div class="col-flag"><span class="badge badge-n">N</span></div></div>
+  <div class="tbl-section">Solves Traceability Bug</div>
+</div>
+
+</div><!-- /canvas -->
+
+</body>
+</html>
