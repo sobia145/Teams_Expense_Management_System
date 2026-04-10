@@ -22,6 +22,7 @@ public class ExpenseService {
     private final UserRepository userRepository;
     private final HistoryLogRepository historyLogRepository;
     private final BudgetRepository budgetRepository;
+    private final BudgetAlertRepository budgetAlertRepository;
     
     public List<Expense> getExpensesForUser(Integer userId) {
         return expenseRepository.findExpensesForUser(userId);
@@ -43,12 +44,18 @@ public class ExpenseService {
         }
 
         Group group = groupRepository.findById(request.getGroupId()).orElseThrow();
+        
+        if (Boolean.TRUE.equals(group.getIsLocked())) {
+            throw new IllegalStateException("CONFLICT: This group is locked. No further expenses can be added.");
+        }
+
         User payer = userRepository.findById(request.getPaidBy()).orElseThrow();
 
         // STEP 2: SAVE MAIN EXPENSE (Mandate Status = PENDING)
         Expense newExpense = Expense.builder()
                 .group(group)
                 .paidBy(payer)
+                .categoryId(request.getCategoryId())
                 .title(request.getTitle())
                 .totalAmount(request.getTotalAmount())
                 .expenseDate(request.getExpenseDate())
@@ -89,7 +96,13 @@ public class ExpenseService {
         budgetRepository.findByGroup_GroupId(request.getGroupId()).forEach(budget -> {
             if(projectedGroupTotal.compareTo(budget.getLimitAmount()) > 0) {
                 System.out.println("⚠️ BUDGET ALERT: Group " + group.getName() + " exceeded limit by Rs. " + projectedGroupTotal.subtract(budget.getLimitAmount()));
-                // TODO: Store this alert precisely into the `budget_alerts` MySQL table!
+                
+                BudgetAlert alert = BudgetAlert.builder()
+                    .group(group)
+                    .categoryId(budget.getCategoryId())
+                    .exceededAmount(projectedGroupTotal.subtract(budget.getLimitAmount()))
+                    .build();
+                budgetAlertRepository.save(alert);
             }
         });
 
@@ -99,6 +112,7 @@ public class ExpenseService {
             .entityId(savedExpense.getExpenseId())
             .action("CREATED")
             .performedBy(payer.getUserId())
+            .performedByName(payer.getName())
             .newData("{\"title\":\"" + savedExpense.getTitle() + "\", \"amount\":" + savedExpense.getTotalAmount() + "}")
             .build();
         historyLogRepository.save(log);

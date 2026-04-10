@@ -2,6 +2,9 @@ package com.tems.backend.service;
 
 import com.tems.backend.entity.Group;
 import com.tems.backend.repository.GroupRepository;
+import com.tems.backend.repository.ExpenseRepository;
+import com.tems.backend.repository.HistoryLogRepository;
+import com.tems.backend.entity.HistoryLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +21,12 @@ public class GroupService {
     
     @Autowired
     private com.tems.backend.repository.UserRepository userRepository;
+    
+    @Autowired
+    private ExpenseRepository expenseRepository;
+    
+    @Autowired
+    private HistoryLogRepository historyLogRepository;
 
     public List<Group> getGroupsForUser(Integer userId) {
         return groupRepository.findActiveGroupsByUserId(userId);
@@ -68,5 +77,52 @@ public class GroupService {
         }
             
         return savedGroup;
+    }
+    
+    @Transactional
+    public void deleteGroup(Integer groupId, Integer userId) {
+        Group group = groupRepository.findById(groupId)
+            .orElseThrow(() -> new IllegalArgumentException("Group not found"));
+            
+        group.setIsDeleted(true);
+        groupRepository.save(group);
+        
+        // Deep Cascade Delete globally hiding expenses
+        expenseRepository.softDeleteExpensesByGroupId(groupId);
+        
+        // Find Executor
+        com.tems.backend.entity.User actor = userRepository.findById(userId).orElse(null);
+        String actorName = actor != null ? actor.getName() : "System";
+        
+        // Globally Audit the execution
+        HistoryLog log = HistoryLog.builder()
+            .entityType("GROUP")
+            .entityId(groupId)
+            .action("DELETED")
+            .performedBy(userId)
+            .performedByName(actorName)
+            .newData("Securely soft-deleted Group: " + group.getName() + " and cascaded the deletion to all associated expenses.")
+            .build();
+        historyLogRepository.save(log);
+    }
+
+    @Transactional
+    public Group lockGroup(Integer groupId) {
+        Group group = groupRepository.findById(groupId)
+            .orElseThrow(() -> new IllegalArgumentException("Group not found"));
+        group.setIsLocked(true);
+        Group saved = groupRepository.save(group);
+
+        HistoryLog log = HistoryLog.builder()
+            .entityType("GROUP")
+            .entityId(groupId)
+            .action("LOCKED")
+            .performedBy(null) // System action
+            .performedByName("System")
+            .newData("Trip Locked for Group: " + group.getName() + ". Modifications are now disabled.")
+            .build();
+        historyLogRepository.save(log);
+
+        return saved;
     }
 }

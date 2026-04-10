@@ -5,4 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository 
-public interface ExpenseSplitRepository extends JpaRepository<ExpenseSplit, Integer> {}
+public interface ExpenseSplitRepository extends JpaRepository<ExpenseSplit, Integer> {
+    java.util.List<ExpenseSplit> findByExpense_ExpenseId(Integer expenseId);
+}

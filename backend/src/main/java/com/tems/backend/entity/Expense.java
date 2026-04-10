@@ -23,6 +23,10 @@ public class Expense {
     private User paidBy; 
     
     private String title; 
+    
+    @Column(name="category_id")
+    private Integer categoryId;
+    
     private BigDecimal totalAmount; 
     private LocalDate expenseDate; 
     private String status; 

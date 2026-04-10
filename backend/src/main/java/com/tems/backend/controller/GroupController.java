@@ -43,4 +43,17 @@ public class GroupController {
         // Automatically bypasses logical array intersections!
         return ResponseEntity.ok(groupService.getAllGroups());
     }
+    
+    // DELETE http://localhost:8080/api/groups/{groupId}
+    @DeleteMapping("/{groupId}")
+    public ResponseEntity<String> deleteGroup(@PathVariable Integer groupId, @RequestParam Integer userId) {
+        groupService.deleteGroup(groupId, userId);
+        return ResponseEntity.ok("Group logically deleted successfully");
+    }
+
+    // PUT http://localhost:8080/api/groups/{groupId}/lock
+    @PutMapping("/{groupId}/lock")
+    public ResponseEntity<Group> lockGroup(@PathVariable Integer groupId) {
+        return ResponseEntity.ok(groupService.lockGroup(groupId));
+    }
 }

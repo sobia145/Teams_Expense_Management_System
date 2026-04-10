@@ -5,6 +5,7 @@ import com.tems.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.tems.backend.config.JwtUtil;
 
 @RestController
 @RequestMapping("/api/users")
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final JwtUtil jwtUtil;
 
     // POST http://localhost:8080/api/users/register
     @PostMapping("/register")
@@ -28,8 +30,9 @@ public class UserController {
 
     // POST http://localhost:8080/api/users/login
     @PostMapping("/login")
-    public ResponseEntity<User> loginUser(@RequestBody User user) {
+    public ResponseEntity<com.tems.backend.dto.AuthResponse> loginUser(@RequestBody User user) {
         User loggedInUser = userService.login(user);
-        return ResponseEntity.ok(loggedInUser);
+        String token = jwtUtil.generateToken(loggedInUser);
+        return ResponseEntity.ok(new com.tems.backend.dto.AuthResponse(token, loggedInUser));
     }
 }

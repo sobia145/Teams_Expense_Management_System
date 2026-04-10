@@ -17,5 +17,6 @@ public class HistoryLog {
     private Integer entityId; 
     private String action; 
     private Integer performedBy; 
+    private String performedByName;
     private String newData; 
 }

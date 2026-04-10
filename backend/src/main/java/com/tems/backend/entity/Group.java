@@ -33,6 +33,10 @@ public class Group {
     @Column(nullable = false, name="is_deleted")
     private Boolean isDeleted = false;
 
+    @Builder.Default
+    @Column(nullable = false, name="is_locked")
+    private Boolean isLocked = false;
+
     @Column(updatable = false, name="created_at")
     private LocalDateTime createdAt;
 

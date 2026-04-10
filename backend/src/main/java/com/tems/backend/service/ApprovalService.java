@@ -4,6 +4,8 @@ import com.tems.backend.entity.Approval;
 import com.tems.backend.entity.Expense;
 import com.tems.backend.repository.ApprovalRepository;
 import com.tems.backend.repository.ExpenseRepository;
+import com.tems.backend.repository.HistoryLogRepository;
+import com.tems.backend.entity.HistoryLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,7 @@ public class ApprovalService {
 
     private final ApprovalRepository approvalRepository;
     private final ExpenseRepository expenseRepository;
+    private final HistoryLogRepository historyLogRepository;
 
     public List<Approval> getPendingApprovalsForUser(Integer userId) {
         return approvalRepository.findByUser_UserIdAndStatus(userId, "PENDING");
@@ -42,6 +45,17 @@ public class ApprovalService {
         // Update their specific ticket
         targetApproval.setStatus(status);
         approvalRepository.save(targetApproval);
+
+        // Core Audit: Log which specific user performed the approval/objection
+        HistoryLog log = HistoryLog.builder()
+            .entityType("APPROVAL")
+            .entityId(expenseId)
+            .action(status)
+            .performedBy(userId)
+            .performedByName(targetApproval.getUser().getName())
+            .newData("User " + targetApproval.getUser().getName() + " updated approval status for expense #" + expenseId + " to " + status)
+            .build();
+        historyLogRepository.save(log);
         
         Expense expense = targetApproval.getExpense();
 
