@@ -1,0 +1,125 @@
+.login-container {
+  display: flex;
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  background-color: #f8fafc;
+}
+
+/* Left Graphic Column */
+.login-graphic-pane {
+  flex: 1;
+  background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  padding: 40px;
+}
+.login-graphic-pane img {
+  max-width: 80%;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  margin-top: 40px;
+}
+.login-graphic-text {
+  text-align: center;
+  max-width: 400px;
+  z-index: 2;
+}
+.login-graphic-text h2 { font-size: 2.5rem; font-weight: 700; margin-bottom: 16px;}
+.login-graphic-text p { font-size: 1.1rem; opacity: 0.9; line-height: 1.6;}
+
+/* Right Form Column */
+.login-form-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 10%;
+  background: white;
+}
+.login-form-pane .logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 60px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+.login-form-pane h3 {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  color: #0f172a;
+}
+.login-form-pane .subtitle {
+  color: #64748b;
+  margin-bottom: 40px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.input-wrap label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+}
+.input-wrap input {
+  padding: 14px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+.input-wrap input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.auth-options {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+.auth-options a { color: #3b82f6; text-decoration: none; font-weight: 500; cursor: pointer; }
+.auth-options label { display: flex; align-items: center; gap: 8px; color: #475569;}
+
+.primary-auth-button {
+  background: #6366f1; /* Purpleish blue from mentor reference */
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.2s;
+}
+.primary-auth-button:hover { background: #4f46e5; }
+
+.error-message {
+  color: #ef4444;
+  background: #fee2e2;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+/* Responsiveness */
+@media (max-width: 900px) {
+  .login-container { flex-direction: column; }
+  .login-graphic-pane { display: none; }
+}

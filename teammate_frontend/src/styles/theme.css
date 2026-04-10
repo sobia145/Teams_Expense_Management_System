@@ -1,0 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Merriweather:wght@700&display=swap');
+
+:root {
+  color-scheme: light;
+  --bg-main: #f2f5f7;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f9fbfc;
+  --text-strong: #112231;
+  --text-soft: #5a6b79;
+  --brand-900: #0e374d;
+  --brand-700: #146084;
+  --brand-500: #1d89ba;
+  --brand-100: #d7ecf8;
+  --accent-700: #cf7c2e;
+  --accent-100: #f9ebdc;
+  --success-600: #1f8a57;
+  --warning-600: #d1881f;
+  --danger-600: #bf3f3f;
+  --line: #d6e0e6;
+  --surface-strong: #ffffff;
+  --surface-muted: #eef3f6;
+  --surface-subtle: #f7fafc;
+  --sidebar-bg: linear-gradient(180deg, #0f3245, #154b69);
+  --sidebar-text: #e9f3f8;
+  --sidebar-text-soft: #b5d2e3;
+  --sidebar-link: #d9edf8;
+  --sidebar-hover: rgba(255, 255, 255, 0.15);
+  --overlay: rgba(11, 25, 35, 0.45);
+  --focus-ring: rgba(20, 96, 132, 0.25);
+  --auth-backdrop: radial-gradient(circle at 20% 10%, rgba(29, 137, 186, 0.12), transparent 36%), radial-gradient(circle at 82% 18%, rgba(207, 124, 46, 0.14), transparent 30%), var(--bg-main);
+  --control-border: #c9dce7;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --shadow-soft: 0 10px 32px rgba(17, 34, 49, 0.08);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg-main: #0b1117;
+  --bg-surface: #121a22;
+  --bg-elevated: #16212b;
+  --text-strong: #ecf4f8;
+  --text-soft: #a4b5c2;
+  --brand-900: #d6eef9;
+  --brand-700: #4fb2df;
+  --brand-500: #77c6eb;
+  --brand-100: #133447;
+  --accent-700: #f2a65a;
+  --accent-100: #3c2b1d;
+  --success-600: #46c27e;
+  --warning-600: #f0b04d;
+  --danger-600: #ef7f7f;
+  --line: #263340;
+  --surface-strong: #18232d;
+  --surface-muted: #13202a;
+  --surface-subtle: #101922;
+  --sidebar-bg: linear-gradient(180deg, #08141d, #102638);
+  --sidebar-text: #eef7fb;
+  --sidebar-text-soft: #9fb8c9;
+  --sidebar-link: #d7edf8;
+  --sidebar-hover: rgba(255, 255, 255, 0.1);
+  --overlay: rgba(1, 6, 10, 0.68);
+  --focus-ring: rgba(119, 198, 235, 0.24);
+  --auth-backdrop: radial-gradient(circle at 20% 10%, rgba(29, 137, 186, 0.16), transparent 36%), radial-gradient(circle at 82% 18%, rgba(207, 124, 46, 0.16), transparent 30%), var(--bg-main);
+  --control-border: #385062;
+  --shadow-soft: 0 12px 34px rgba(0, 0, 0, 0.28);
+}
