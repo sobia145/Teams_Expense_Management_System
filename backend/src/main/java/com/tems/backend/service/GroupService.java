@@ -23,10 +23,28 @@ public class GroupService {
     private com.tems.backend.repository.UserRepository userRepository;
     
     @Autowired
-    private ExpenseRepository expenseRepository;
-    
-    @Autowired
     private HistoryLogRepository historyLogRepository;
+
+    @Autowired
+    private ExpenseRepository expenseRepository;
+
+    @Autowired
+    private com.tems.backend.repository.TransactionRepository transactionRepository;
+
+    @Autowired
+    private com.tems.backend.repository.DebtRepository debtRepository;
+
+    @Autowired
+    private com.tems.backend.repository.ApprovalRepository approvalRepository;
+
+    @Autowired
+    private com.tems.backend.repository.ExpenseSplitRepository expenseSplitRepository;
+
+    @Autowired
+    private com.tems.backend.repository.BudgetRepository budgetRepository;
+
+    @Autowired
+    private com.tems.backend.repository.BudgetAlertRepository budgetAlertRepository;
 
     public List<Group> getGroupsForUser(Integer userId) {
         return groupRepository.findActiveGroupsByUserId(userId);
@@ -81,29 +99,58 @@ public class GroupService {
     
     @Transactional
     public void deleteGroup(Integer groupId, Integer userId) {
-        Group group = groupRepository.findById(groupId)
-            .orElseThrow(() -> new IllegalArgumentException("Group not found"));
+        try {
+            // 1. Capture Group metadata for the audit trail before it's gone
+            Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("Group not found"));
+            String capturedGroupName = group.getName();
+
+            // --- Pre-fetch: Identify all records attached to this group ---
+            List<Integer> expenseIds = expenseRepository.findByGroup_GroupId(groupId)
+                .stream().map(com.tems.backend.entity.Expense::getExpenseId).toList();
             
-        group.setIsDeleted(true);
-        groupRepository.save(group);
-        
-        // Deep Cascade Delete globally hiding expenses
-        expenseRepository.softDeleteExpensesByGroupId(groupId);
-        
-        // Find Executor
-        com.tems.backend.entity.User actor = userRepository.findById(userId).orElse(null);
-        String actorName = actor != null ? actor.getName() : "System";
-        
-        // Globally Audit the execution
-        HistoryLog log = HistoryLog.builder()
-            .entityType("GROUP")
-            .entityId(groupId)
-            .action("DELETED")
-            .performedBy(userId)
-            .performedByName(actorName)
-            .newData("Securely soft-deleted Group: " + group.getName() + " and cascaded the deletion to all associated expenses.")
-            .build();
-        historyLogRepository.save(log);
+            // 2. Atomic Sequential Cascade Deletion (Bottom-Up)
+            
+            // --- Phase A: Clear Leaf Nodes (Deep Children) ---
+            if (!expenseIds.isEmpty()) {
+                approvalRepository.deleteByExpenseIds(expenseIds);
+                expenseSplitRepository.deleteByExpenseIds(expenseIds);
+            }
+
+            // --- Phase B: Clear Ledger ---
+            transactionRepository.deleteByGroupId(groupId);
+            debtRepository.deleteByGroupId(groupId);
+
+            // --- Phase C: Clear Expenses ---
+            expenseRepository.deleteByGroupId(groupId);
+
+            // --- Phase D: Budget Cleanup ---
+            budgetAlertRepository.deleteByGroupId(groupId);
+            budgetRepository.deleteByGroupId(groupId);
+
+            // --- Phase E: Clear Membership ---
+            groupMemberRepository.deleteByGroupId(groupId);
+
+            // --- Phase F: Physical Delete of the Group itself ---
+            groupRepository.deleteById(groupId);
+            
+            // --- Audit Persistence ---
+            com.tems.backend.entity.User actor = userRepository.findById(userId).orElse(null);
+            String actorName = actor != null ? actor.getName() : "System";
+            
+            HistoryLog log = HistoryLog.builder()
+                .entityType("GROUP")
+                .entityId(groupId)
+                .groupName(capturedGroupName)
+                .action("PERMANENTLY_DELETED")
+                .performedBy(userId)
+                .performedByName(actorName)
+                .newData("Successfully performed a complete hard-cascade deletion of Group '" + capturedGroupName + "' and all linked records.")
+                .build();
+            historyLogRepository.save(log);
+        } catch (Exception e) {
+            throw e;
+        }
     }
 
     @Transactional

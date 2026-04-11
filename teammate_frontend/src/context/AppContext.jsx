@@ -1,8 +1,9 @@
-import { createContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useEffect, useMemo, useState, useCallback } from 'react';
 import useAuth from '../hooks/useAuth';
 import { groupService } from '../services/groupService';
 import { expenseService } from '../services/expenseService';
 import { adminService } from '../services/adminService';
+import api from '../services/api';
 
 export const AppContext = createContext(null);
 
@@ -27,10 +28,11 @@ export const AppProvider = ({ children }) => {
     return prefersDark ? 'dark' : 'light';
   });
 
-  const selectedGroup = useMemo(() => 
-    groups.find(g => g.groupId === selectedGroupId), 
-    [groups, selectedGroupId]
-  );
+  // CRITICAL FIX: Use String coercion to ensure robust matching even if IDs come from different types (JSON number vs Route string)
+  const selectedGroup = useMemo(() => {
+    if (!selectedGroupId) return null;
+    return groups.find(g => String(g.groupId) === String(selectedGroupId)) || null;
+  }, [groups, selectedGroupId]);
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -42,27 +44,41 @@ export const AppProvider = ({ children }) => {
     }
   }, [theme]);
 
-  // Master Bootstrapper: Populating global Application State explicitly from MySQL whenever a User logs in natively
+  const refreshHistory = useCallback(async (currentUser) => {
+    if (!currentUser) return;
+    try {
+        if (currentUser.role === 'ADMIN') {
+            const h = await adminService.getHistoryLogs();
+            setHistory(h || []);
+        } else {
+            // Priority: If a group is selected, show group-wide feed (Notifications logic)
+            // Fallback: Show personal activity
+            const endpoint = selectedGroupId 
+                ? `/history?groupId=${selectedGroupId}` 
+                : `/history?name=${encodeURIComponent(currentUser.name)}`;
+                
+            const res = await api.get(endpoint);
+            setHistory(res.data || []);
+        }
+    } catch (err) {
+        console.error("History sync failed", err);
+    }
+  }, [selectedGroupId]);
+
+  // Master Bootstrapper
   useEffect(() => {
     if (user && user.userId) {
         groupService.getGroupsForApp(user).then(setGroups);
         expenseService.getExpenses(user).then(setExpenses);
         expenseService.getPendingApprovals(user.userId).then(setNotifications);
-        
-        // Populate History Log explicitly from MySQL!
-        if (user.role === 'ADMIN') {
-            adminService.getHistoryLogs().then(setHistory);
-        } else {
-            // For regular users, history is currently session-based or fetched via specific group logic
-            setHistory([]);
-        }
+        refreshHistory(user);
     } else {
         setGroups([]);
         setExpenses([]);
         setNotifications([]);
         setHistory([]);
     }
-  }, [user]);
+  }, [user, refreshHistory]);
 
   useEffect(() => {
     if (selectedGroupId) {
@@ -82,18 +98,31 @@ export const AppProvider = ({ children }) => {
     setTheme((current) => (current === 'light' ? 'dark' : 'light'));
   };
 
-  const addHistoryEvent = (event, details, actor = 'You') => {
-    setHistory((prev) => [
-      {
-        id: Date.now(),
-        event,
-        actor,
-        details,
-        time: new Date().toISOString()
-      },
-      ...prev
-    ]);
-  };
+  /**
+   * PERSISTENT AUDIT LOGGER
+   * Writes history events directly to the MySQL database so they survive logouts/refreshes!
+   */
+  const addHistoryEvent = useCallback(async (action, newData, actorName = user?.name || 'System') => {
+    const logPayload = {
+        action,
+        newData,
+        performedByName: actorName,
+        performedBy: user?.userId || null,
+        entityType: 'ACTIVITY',
+        groupId: selectedGroupId,
+        groupName: selectedGroup?.name || null
+    };
+
+    try {
+        // Physically push the log to the Java Backend!
+        await api.post('/history/add', logPayload);
+        // Instant refresh to sync the UI with the real DB state
+        refreshHistory(user);
+    } catch (err) {
+        console.warn("Audit persistence failed, using local fallback", err);
+        setHistory(prev => [{ ...logPayload, createdAt: new Date().toISOString() }, ...prev]);
+    }
+  }, [user, selectedGroupId, refreshHistory]);
 
   const value = useMemo(
     () => ({
@@ -116,9 +145,10 @@ export const AppProvider = ({ children }) => {
       setTripLocked,
       theme,
       setTheme,
-      toggleTheme
+      toggleTheme,
+      refreshHistory: () => refreshHistory(user)
     }),
-    [groups, selectedGroupId, selectedGroup, expenses, budgets, notifications, history, settlements, tripLocked, theme]
+    [groups, selectedGroupId, selectedGroup, expenses, budgets, notifications, history, addHistoryEvent, settlements, tripLocked, theme, user]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

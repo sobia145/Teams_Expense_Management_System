@@ -16,8 +16,9 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    // Generate a secure robust key since none was provided
-    private final SecretKey SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    // Using a static, consistent key for development to prevent session loss on restart
+    private final String SECRET_STRING = "42624b525245354e6a45774e4449334d4449304e6a55314d7a55304e7a51354d7a426b5a475a6c4d574e6b";
+    private final SecretKey SECRET_KEY = Keys.hmacShaKeyFor(SECRET_STRING.getBytes());
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);

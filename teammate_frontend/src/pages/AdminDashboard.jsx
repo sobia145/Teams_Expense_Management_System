@@ -23,9 +23,12 @@ const AdminDashboard = () => {
   const [expenses, setExpenses] = useState([]);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    Promise.all([
+  const fetchData = () => {
+    setRefreshing(true);
+    return Promise.all([
       adminService.getAnalytics(),
       adminService.getBudgetAlerts(),
       adminService.getExpenses(),
@@ -36,9 +39,17 @@ const AdminDashboard = () => {
       setExpenses(e || []);
       setHistory(h || []);
       setLoading(false);
-    }).catch(() => {
+      setRefreshing(false);
+    }).catch((err) => {
+      console.error(err);
+      setError("Critical Access Error: Could not reach Admin Analytics Gateway.");
       setLoading(false);
+      setRefreshing(false);
     });
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
 
   const COLORS = { Food: '#3B82F6', Travel: '#F95858', Entertainment: '#9B51E0', Other: '#45D09E' };
@@ -71,15 +82,32 @@ const AdminDashboard = () => {
     return { date: day, amount: found ? found.amount : 0 };
   });
 
-  if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: '#64748B' }}>Loading Dashboard...</div>;
+  if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: '#64748B' }}>Synchronizing Global Data...</div>;
+  if (error) return <div style={{ padding: '4rem', textAlign: 'center', color: '#EF4444', fontWeight: 600 }}>{error}</div>;
 
   return (
     <div style={{ background: '#F0F2F5', minHeight: '100vh', padding: '1.5rem', fontFamily: '"Inter", sans-serif', width: '100%' }}>
       <div style={{ background: '#FFFFFF', borderRadius: '30px', padding: '2.5rem', boxShadow: '0 10px 30px rgba(0,0,0,0.02)', maxWidth: '1400px', margin: '0 auto', color: '#1B2559' }}>
         
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
-          <h1 style={{ margin: 0, fontSize: '1.75rem', color: '#1B2559', fontWeight: 700 }}>Admin Operations</h1>
+          <h1 style={{ margin: 0, fontSize: '1.75rem', color: '#1B2559', fontWeight: 700 }}>Global System Monitoring</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <button 
+                onClick={fetchData} 
+                style={{ 
+                    background: refreshing ? '#E2E8F0' : '#4318FF', 
+                    color: '#FFF', 
+                    border: 'none', 
+                    borderRadius: '12px', 
+                    padding: '0.6rem 1.2rem', 
+                    fontWeight: 600, 
+                    cursor: refreshing ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s'
+                }}
+                disabled={refreshing}
+            >
+                {refreshing ? 'Refreshing...' : 'Sync Now'}
+            </button>
             <div style={{ background: '#F4F7FE', borderRadius: '30px', padding: '0.6rem 1.2rem', display: 'flex', alignItems: 'center', color: '#A3AED0', width: '250px' }}>
               <SearchIcon />
               <input type="text" placeholder="Search analytics..." style={{ border: 'none', background: 'none', outline: 'none', marginLeft: '0.5rem', color: '#1B2559', width: '100%', fontSize: '0.9rem' }} />

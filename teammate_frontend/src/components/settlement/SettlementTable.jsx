@@ -3,13 +3,10 @@ import formatCurrency from '../../utils/formatCurrency';
 const SettlementTable = ({ rows, onMarkPaid, onDownloadReceipt, disabled }) => {
   return (
     <section className="content-card panel-pad">
-      <h3>Optimized Settlements</h3>
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Team</th>
-              <th>Expense</th>
               <th>From</th>
               <th>To</th>
               <th>Amount</th>
@@ -20,21 +17,25 @@ const SettlementTable = ({ rows, onMarkPaid, onDownloadReceipt, disabled }) => {
           <tbody>
             {rows.map((item, index) => (
               <tr key={index}>
-                <td>{item.teamName || '-'}</td>
-                <td>{item.expenseTitle || `Debt Clearance`}</td>
-                <td>{item.fromUserName || item.from}</td>
+                <td><strong>{item.fromUserName || item.from}</strong></td>
                 <td>{item.toUserName || item.to}</td>
-                <td>{formatCurrency(item.amount)}</td>
-                <td>{item.status || 'UNPAID'}</td>
+                <td><span className="amount-pill">{formatCurrency(item.amount)}</span></td>
+                <td>
+                    <span className={`status-badge ${item.status === 'PAID' ? 'status-success' : 'status-pending'}`}>
+                        {item.status || 'UNPAID'}
+                    </span>
+                </td>
                 <td>
                   <div className="row-gap">
-                    <button
-                      className="btn btn-muted"
-                      disabled={disabled || item.status === 'PAID'}
-                      onClick={() => onMarkPaid(index)}
-                    >
-                      Mark Paid
-                    </button>
+                    {onMarkPaid && (
+                        <button
+                          className="btn btn-muted"
+                          disabled={disabled || item.status === 'PAID'}
+                          onClick={() => onMarkPaid(item)}
+                        >
+                          Mark Paid
+                        </button>
+                    )}
                     <button
                       className="btn btn-primary"
                       disabled={item.status !== 'PAID'}
@@ -47,6 +48,13 @@ const SettlementTable = ({ rows, onMarkPaid, onDownloadReceipt, disabled }) => {
                 </td>
               </tr>
             ))}
+            {rows.length === 0 && (
+                <tr>
+                    <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-muted)' }}>
+                        No records found in this category.
+                    </td>
+                </tr>
+            )}
           </tbody>
         </table>
       </div>

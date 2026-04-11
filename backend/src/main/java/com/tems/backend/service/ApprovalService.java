@@ -19,9 +19,11 @@ public class ApprovalService {
     private final ApprovalRepository approvalRepository;
     private final ExpenseRepository expenseRepository;
     private final HistoryLogRepository historyLogRepository;
+    private final DebtService debtService;
 
     public List<Approval> getPendingApprovalsForUser(Integer userId) {
-        return approvalRepository.findByUser_UserIdAndStatus(userId, "PENDING");
+        // Self-Healing: Use a join query to ensure the group still exists for the related expense
+        return approvalRepository.findActivePendingApprovalsByUser(userId, "PENDING");
     }
 
     @Transactional
@@ -78,7 +80,9 @@ public class ApprovalService {
             }
             if (allApproved) {
                 expense.setStatus("APPROVED");
-                return expenseRepository.save(expense);
+                Expense saved = expenseRepository.save(expense);
+                debtService.processApprovedExpense(saved);
+                return saved;
             }
         }
 

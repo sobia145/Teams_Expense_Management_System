@@ -9,7 +9,7 @@ const Sidebar = () => {
   // Per vision: Admin should see dashboard and global controls but not interact with individual trip setups
   const activeLinks = user?.role === 'ADMIN' 
     ? NAV_LINKS.filter(link => ['Dashboard', 'History', 'Users'].includes(link.label))
-    : NAV_LINKS;
+    : NAV_LINKS.filter(link => !['Users'].includes(link.label));
 
   return (
     <aside className="sidebar">

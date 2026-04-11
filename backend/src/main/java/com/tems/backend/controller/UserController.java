@@ -30,9 +30,16 @@ public class UserController {
 
     // POST http://localhost:8080/api/users/login
     @PostMapping("/login")
-    public ResponseEntity<com.tems.backend.dto.AuthResponse> loginUser(@RequestBody User user) {
-        User loggedInUser = userService.login(user);
-        String token = jwtUtil.generateToken(loggedInUser);
-        return ResponseEntity.ok(new com.tems.backend.dto.AuthResponse(token, loggedInUser));
+    public ResponseEntity<?> loginUser(@RequestBody User user) {
+        try {
+            User loggedInUser = userService.login(user);
+            String token = jwtUtil.generateToken(loggedInUser);
+            return ResponseEntity.ok(new com.tems.backend.dto.AuthResponse(token, loggedInUser));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(401).body(new java.util.HashMap<String, String>() {{
+                put("error", "Unauthorized");
+                put("message", e.getMessage());
+            }});
+        }
     }
 }

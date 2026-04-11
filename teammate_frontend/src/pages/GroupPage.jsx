@@ -10,9 +10,10 @@ import formatCurrency from '../utils/formatCurrency';
 const GroupPage = () => {
   const { user } = useAuth();
   const { groups, setGroups, expenses, addHistoryEvent, selectedGroupId, setSelectedGroupId } = useContext(AppContext);
-  const selectedGroup = groups.find(g => g.groupId === selectedGroupId) || null;
+  const selectedGroup = groups.find(g => String(g.groupId) === String(selectedGroupId)) || null;
+  const [members, setMembers] = useState([]);
 
-  const groupExpenses = expenses.filter(e => e.groupId === selectedGroupId && e.status === 'APPROVED');
+  const groupExpenses = expenses.filter(e => String(e.groupId) === String(selectedGroupId) && e.status === 'APPROVED');
   const totalSpent = groupExpenses.reduce((sum, exp) => sum + (exp.totalAmount || 0), 0);
 
   const handleAddGroup = async (group) => {
@@ -28,16 +29,38 @@ const GroupPage = () => {
     }
   };
 
+  useEffect(() => {
+    if (selectedGroupId) {
+      groupService.getGroupMembers(selectedGroupId)
+        .then(setMembers)
+        .catch(() => setMembers([]));
+    } else {
+      setMembers([]);
+    }
+  }, [selectedGroupId]);
+
   const handleDeleteGroup = async (groupId) => {
-    const targetGroup = groups.find((group) => group.groupId === groupId);
+    const targetGroup = groups.find((group) => String(group.groupId) === String(groupId));
     if (!targetGroup) return;
+ 
+    // OPTIMISTIC UPDATE: Hide it immediately for a snappy feel!
+    const previousGroups = [...groups];
+    setGroups((prev) => prev.filter((group) => String(group.groupId) !== String(groupId)));
+    if (String(selectedGroupId) === String(groupId)) {
+        setSelectedGroupId(null);
+    }
 
     try {
         await groupService.deleteGroup(groupId, user.userId);
-        setGroups((prev) => prev.filter((group) => group.groupId !== groupId));
-        addHistoryEvent('Group Deleted', `Group ${targetGroup.name} was securely deleted.`);
+        addHistoryEvent('Group Deleted', `Group ${targetGroup.name} was securely deleted.`, user.name);
     } catch(err) {
-        alert("Delete Failed: Network Error");
+        console.error("Deletion sync failed", err);
+        // ROLLBACK: Bring it back if the server says no!
+        setGroups(previousGroups);
+        
+        // Extract real error message from backend if available!
+        const backendError = err.response?.data || err.message;
+        alert("Delete Failed: " + backendError);
     }
   };
 
@@ -47,7 +70,7 @@ const GroupPage = () => {
       return;
     }
 
-    if (!selectedGroupId || !groups.some((group) => group.groupId === selectedGroupId)) {
+    if (!selectedGroupId || !groups.some((group) => String(group.groupId) === String(selectedGroupId))) {
       setSelectedGroupId(groups[0].groupId);
     }
   }, [groups, selectedGroupId, setSelectedGroupId]);
@@ -74,7 +97,7 @@ const GroupPage = () => {
                     </div>
                     <div style={{ textAlign: 'center' }}>
                         <small style={{ display: 'block', color: 'var(--slate-500)', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 600 }}>Members</small>
-                        <span style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--brand-700)' }}>{selectedGroup.members?.length || 0}</span>
+                        <span style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--brand-700)' }}>{members.length}</span>
                     </div>
                     <div style={{ textAlign: 'center' }}>
                         <small style={{ display: 'block', color: 'var(--slate-500)', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 600 }}>Status</small>
@@ -89,7 +112,7 @@ const GroupPage = () => {
 
       <div className="grid-two">
         <GroupForm onSubmit={handleAddGroup} />
-        <MemberList members={selectedGroup?.members || []} />
+        <MemberList members={members} />
       </div>
       <section className="grid-two">
         {groups.map((group) => (

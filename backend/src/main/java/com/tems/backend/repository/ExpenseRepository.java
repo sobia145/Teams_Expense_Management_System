@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -26,5 +27,11 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer> {
     @Query("UPDATE Expense e SET e.isDeleted = true WHERE e.group.groupId = :groupId")
     void softDeleteExpensesByGroupId(@Param("groupId") Integer groupId);
 
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Expense e WHERE e.group.groupId = :groupId")
+    void deleteByGroupId(@Param("groupId") Integer groupId);
+
     List<Expense> findByGroup_GroupIdAndStatus(Integer groupId, String status);
+    List<Expense> findByGroup_GroupId(Integer groupId);
 }

@@ -63,7 +63,9 @@ public class User implements UserDetails {
     @JsonIgnore
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role != null && !role.trim().isEmpty() ? role : "USER"));
+        String effectiveRole = getRole();
+        // Switching to literal authority to avoid ROLE_ prefix mismatch bugs
+        return List.of(new SimpleGrantedAuthority(effectiveRole));
     }
 
     @JsonIgnore
@@ -87,7 +89,8 @@ public class User implements UserDetails {
     @JsonIgnore
     @Override
     public boolean isAccountNonLocked() {
-        return !isDeleted;
+        // Strict null safety for unboxing: Boolean.TRUE.equals or Boolean.FALSE.equals
+        return !Boolean.TRUE.equals(isDeleted);
     }
 
     @JsonIgnore
@@ -99,6 +102,6 @@ public class User implements UserDetails {
     @JsonIgnore
     @Override
     public boolean isEnabled() {
-        return !isDeleted;
+        return !Boolean.TRUE.equals(isDeleted);
     }
 }

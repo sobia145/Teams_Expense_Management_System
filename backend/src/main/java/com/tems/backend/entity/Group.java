@@ -11,8 +11,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@SQLDelete(sql = "UPDATE `groups` SET is_deleted = true WHERE group_id=?")
-// @Where(clause =...) is deprecated in Spring Boot 3. Use @SQLRestriction("is_deleted = false") when ready.
 public class Group {
     
     @Id

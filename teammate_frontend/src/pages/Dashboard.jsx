@@ -16,8 +16,9 @@ const Dashboard = () => {
       return <AdminDashboard />;
   }
 
+  const activeGroupIds = new Set(groups.map(g => String(g.groupId)));
   const approvedTotal = expenses
-    .filter((item) => item.status === 'APPROVED')
+    .filter((item) => item.status === 'APPROVED' && activeGroupIds.has(String(item.groupId)))
     .reduce((sum, item) => sum + (item.totalAmount || 0), 0);
 
   const pendingPayments = settlements.filter((item) => item.status !== 'PAID').length;

@@ -47,8 +47,12 @@ public class GroupController {
     // DELETE http://localhost:8080/api/groups/{groupId}
     @DeleteMapping("/{groupId}")
     public ResponseEntity<String> deleteGroup(@PathVariable Integer groupId, @RequestParam Integer userId) {
-        groupService.deleteGroup(groupId, userId);
-        return ResponseEntity.ok("Group logically deleted successfully");
+        try {
+            groupService.deleteGroup(groupId, userId);
+            return ResponseEntity.ok("Group deleted successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Delete Failed: An internal server error occurred during cascade deletion.");
+        }
     }
 
     // PUT http://localhost:8080/api/groups/{groupId}/lock

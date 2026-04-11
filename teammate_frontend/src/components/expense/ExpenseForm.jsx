@@ -14,7 +14,14 @@ const ExpenseForm = ({ onAddExpense, disabled, creatorName, userGroups = [] }) =
   const [groupMembers, setGroupMembers] = useState([]);
   const [splitType, setSplitType] = useState('EQUAL'); // 'EQUAL' or 'CUSTOM'
   const [customSplitMembers, setCustomSplitMembers] = useState([]);
-
+ 
+  // Sync default groupId when userGroups arrives from the backend!
+  useEffect(() => {
+    if (!form.groupId && userGroups.length > 0) {
+        setForm(prev => ({ ...prev, groupId: userGroups[0].groupId }));
+    }
+  }, [userGroups, form.groupId]);
+ 
   // Auto-fetch members of the selected group!
   useEffect(() => {
     if (form.groupId) {

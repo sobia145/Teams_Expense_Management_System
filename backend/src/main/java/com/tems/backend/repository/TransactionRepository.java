@@ -1,23 +1,22 @@
 package com.tems.backend.repository;
 
-import com.tems.backend.entity.BudgetAlert;
+import com.tems.backend.entity.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-import com.tems.backend.entity.Budget;
 import java.util.List;
 
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.Query;
 
 @Repository
-public interface BudgetAlertRepository extends JpaRepository<BudgetAlert, Integer> {
-    java.util.List<BudgetAlert> findByGroup_GroupId(Integer groupId);
+public interface TransactionRepository extends JpaRepository<Transaction, Integer> {
+    List<Transaction> findByGroup_GroupIdOrderBySettledAtDesc(Integer groupId);
+    List<Transaction> findByFromUser_NameOrToUser_NameOrderBySettledAtDesc(String fromName, String toName);
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM BudgetAlert ba WHERE ba.group.groupId = :groupId")
+    @Query("DELETE FROM Transaction t WHERE t.group.groupId = :groupId")
     void deleteByGroupId(@Param("groupId") Integer groupId);
 }
