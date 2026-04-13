@@ -20,9 +20,7 @@ public class GroupController {
     // GET http://localhost:8080/api/groups/1/members
     @GetMapping("/{groupId}/members")
     public ResponseEntity<List<com.tems.backend.entity.User>> getGroupMembers(@PathVariable Integer groupId) {
-        List<com.tems.backend.entity.User> members = groupMemberRepository.findByGroup_GroupId(groupId)
-            .stream().map(com.tems.backend.entity.GroupMember::getUser).toList();
-        return ResponseEntity.ok(members);
+        return ResponseEntity.ok(groupService.getGroupMembers(groupId));
     }
 
     // GET http://localhost:8080/api/groups/user/1

@@ -206,4 +206,12 @@ public class GroupService {
 
         return saved;
     }
+
+    @Transactional(readOnly = true)
+    public List<com.tems.backend.entity.User> getGroupMembers(Integer groupId) {
+        return groupMemberRepository.findByGroup_GroupId(groupId)
+            .stream()
+            .map(com.tems.backend.entity.GroupMember::getUser)
+            .toList();
+    }
 }
