@@ -58,6 +58,18 @@ public class GroupService {
             Long pending = approvalRepository.countByExpense_Group_GroupIdAndStatus(g.getGroupId(), "PENDING");
             long mCount = groupMemberRepository.countByGroup_GroupId(g.getGroupId());
             
+            // AUTO-REPAIR: If production data is inconsistent (0 members), re-inject the creator safely
+            if (mCount == 0 && g.getCreatedBy() != null) {
+                com.tems.backend.entity.GroupMember repair = com.tems.backend.entity.GroupMember.builder()
+                    .group(g)
+                    .user(g.getCreatedBy())
+                    .role("ADMIN")
+                    .build();
+                groupMemberRepository.save(repair);
+                mCount = 1;
+                entityManager.flush();
+            }
+
             g.setTotalSpent(spent != null ? spent : java.math.BigDecimal.ZERO);
             g.setPendingApprovals(pending != null ? pending : 0L);
             g.setMemberCount(mCount);
@@ -108,6 +120,9 @@ public class GroupService {
                 }
             }
         }
+
+        // FORCE PERSISTENCE: Ensure membership link is solid before return
+        entityManager.flush();
 
         // --- STABILIZATION: ADD TO HISTORY LOG ---
         HistoryLog groupLog = HistoryLog.builder()

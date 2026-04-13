@@ -43,7 +43,7 @@ export const adminService = {
 
   getHistoryLogs: async () => {
     try {
-      const response = await api.get('/admin/history');
+      const response = await api.get('/history');
       return response.data;
     } catch (err) {
       console.error('Failed fetching global history logs', err);

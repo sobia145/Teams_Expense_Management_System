@@ -5,12 +5,15 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 @Entity
 @Table(name = "`groups`") // Enclosed in backticks because groups is a reserved keyword in SQL
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Group {
     
     @Id

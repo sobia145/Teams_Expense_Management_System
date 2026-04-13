@@ -11,12 +11,15 @@ import java.util.Collection;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 @Entity
 @Table(name = "users")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 // Implementing Soft Deletion so references to older financial records do not break!
 @SQLDelete(sql = "UPDATE users SET is_deleted = true WHERE user_id=?")
 // @Where(clause =...) is deprecated in Spring Boot 3. Use @SQLRestriction("is_deleted = false") when ready.
