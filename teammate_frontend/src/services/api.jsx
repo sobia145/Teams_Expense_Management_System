@@ -3,7 +3,7 @@ import axios from 'axios';
 // Create a globally configured Axios instance targeting our Java Spring Boot backend!
 // Say goodbye to the fake timer logic!
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api', // Maps directly to the Java Spring Boot Tomcat port
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api', // Dynamic Production Base URL
   headers: {
     'Content-Type': 'application/json',
   },
