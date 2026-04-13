@@ -49,4 +49,7 @@ public class Group {
 
     @Transient
     private Long pendingApprovals;
+
+    @Transient
+    private Long memberCount;
 }

@@ -56,9 +56,11 @@ public class GroupService {
         for (Group g : activeGroups) {
             java.math.BigDecimal spent = expenseRepository.sumApprovedAmountByGroupId(g.getGroupId());
             Long pending = approvalRepository.countByExpense_Group_GroupIdAndStatus(g.getGroupId(), "PENDING");
+            long mCount = groupMemberRepository.countByGroup_GroupId(g.getGroupId());
             
             g.setTotalSpent(spent != null ? spent : java.math.BigDecimal.ZERO);
             g.setPendingApprovals(pending != null ? pending : 0L);
+            g.setMemberCount(mCount);
         }
         return activeGroups;
     }

@@ -19,6 +19,8 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Intege
     List<GroupMember> findByUser_UserId(Integer userId);
     boolean existsByGroup_GroupIdAndUser_UserId(Integer groupId, Integer userId);
     
+    long countByGroup_GroupId(Integer groupId);
+    
     @Query("SELECT COUNT(gm) FROM GroupMember gm WHERE gm.user.userId = :userId AND gm.group.isDeleted = false")
     long countByUser_UserId(@Param("userId") Integer userId);
 
