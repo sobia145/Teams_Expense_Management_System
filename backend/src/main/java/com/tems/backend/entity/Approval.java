@@ -14,6 +14,7 @@ public class Approval {
     private Integer approvalId; 
     
     @ManyToOne @JoinColumn(name="expense_id") 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Expense expense; 
     
     @ManyToOne @JoinColumn(name="user_id") 

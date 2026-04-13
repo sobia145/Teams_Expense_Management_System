@@ -32,7 +32,7 @@ const GroupCard = ({ group, onSelect, onDeleteGroup }) => {
       </div>
       <p>Total spent: {formatCurrency(group.totalSpent || 0)}</p>
       <p>Pending approvals: {group.pendingApprovals || 0}</p>
-      <p>{group.tripLocked ? 'Trip Locked' : 'Trip Active'}</p>
+      <p>{group.isLocked ? 'Team Locked' : 'Team Active'}</p>
       <div className="card-actions">
         <button className="btn btn-danger" type="button" onClick={handleDelete}>
           Delete Group

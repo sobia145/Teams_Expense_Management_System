@@ -19,63 +19,70 @@ public class DebtService {
     private final ExpenseSplitRepository splitRepository;
 
     @Transactional
-    public void processApprovedExpense(Expense expense) {
+    public void updateDebtsFromExpense(Expense expense) {
+        System.out.println("DEBUG: updateDebtsFromExpense called for expense: " + expense.getExpenseId());
         List<ExpenseSplit> splits = splitRepository.findByExpense_ExpenseId(expense.getExpenseId());
-        User paidBy = expense.getPaidBy();
+        System.out.println("DEBUG: Found " + splits.size() + " splits");
+        
+        Integer creditorId = expense.getPaidBy().getUserId();
+        User creditor = expense.getPaidBy();
+        
+        Integer groupId = expense.getGroup().getGroupId();
         Group group = expense.getGroup();
-
+        
         for (ExpenseSplit split : splits) {
-            User participant = split.getUser();
-            
-            // The person who paid doesn't owe themselves
-            if (participant.getUserId().equals(paidBy.getUserId())) {
-                continue;
+            Integer debtorId = split.getUser().getUserId();
+            User debtor = split.getUser();
+
+            // THE CORE FIX: Strict guard to prevent circular debt (Lender cannot owe themselves)
+            if (debtorId == null || creditorId == null || String.valueOf(debtorId).equals(String.valueOf(creditorId))) {
+                System.out.println("DEBUG: Skipping internal split for user: " + debtorId);
+                continue; 
             }
-
+            
             BigDecimal share = split.getAmountOwed();
-
-            // Net Balance Rule: Check if the creditor (paidBy) already owes the debtor (participant)
-            Optional<Debt> existingReverseDebtOpt = debtRepository.findByGroupAndDebtorAndCreditor(group, paidBy, participant);
-
-            if (existingReverseDebtOpt.isEmpty()) {
-                // Case 1: No reverse debt exists. Check if a normal debt already exists to accumulate.
-                Optional<Debt> existingNormalDebtOpt = debtRepository.findByGroupAndDebtorAndCreditor(group, participant, paidBy);
-                if (existingNormalDebtOpt.isPresent()) {
-                    Debt normalDebt = existingNormalDebtOpt.get();
-                    normalDebt.setAmount(normalDebt.getAmount().add(share));
-                    debtRepository.save(normalDebt);
-                } else {
-                    Debt newDebt = Debt.builder()
-                            .group(group)
-                            .debtor(participant)
-                            .creditor(paidBy)
-                            .amount(share)
-                            .build();
-                    debtRepository.save(newDebt);
-                }
-            } else {
-                // Case 2: Reverse debt exists (paidBy owes participant)
-                Debt reverseDebt = existingReverseDebtOpt.get();
-                BigDecimal existingReverseAmount = reverseDebt.getAmount();
-                BigDecimal net = share.subtract(existingReverseAmount);
-
+            
+            // Check if reverse debt exists (Creditor owes Debtor)
+            Optional<Debt> reverseDebtOpt = debtRepository
+                .findByDebtor_UserIdAndCreditor_UserIdAndGroup_GroupId(creditorId, debtorId, groupId);
+            
+            if (reverseDebtOpt.isPresent()) {
+                Debt reverseDebt = reverseDebtOpt.get();
+                BigDecimal net = share.subtract(reverseDebt.getAmount()).setScale(2, java.math.RoundingMode.HALF_UP);
+                
                 if (net.compareTo(BigDecimal.ZERO) > 0) {
-                    // net > 0: participant now owes paidBy the remainder
-                    debtRepository.delete(reverseDebt);
-                    Debt newDebt = Debt.builder()
-                            .group(group)
-                            .debtor(participant)
-                            .creditor(paidBy)
-                            .amount(net)
-                            .build();
-                    debtRepository.save(newDebt);
+                    // Current share is bigger than old debt: Switch direction
+                    reverseDebt.setDebtor(debtor);
+                    reverseDebt.setCreditor(creditor);
+                    reverseDebt.setAmount(net);
+                    debtRepository.save(reverseDebt);
                 } else if (net.compareTo(BigDecimal.ZERO) < 0) {
-                    // net < 0: paidBy still owes participant, but less
+                    // Old debt is bigger: Reduce the amount creditor owes
                     reverseDebt.setAmount(net.abs());
                     debtRepository.save(reverseDebt);
                 } else {
-                    // net == 0: Perfect balance!
+                    // Perfect balance: Remove the record (Fix 2)
+                    System.out.println("DEBUG: Perfect balance achieved. Deleting debt record.");
                     debtRepository.delete(reverseDebt);
+                }
+            } else {
+                // Check if debt already exists same direction (Debtor owes Creditor)
+                Optional<Debt> existingDebtOpt = debtRepository
+                    .findByDebtor_UserIdAndCreditor_UserIdAndGroup_GroupId(debtorId, creditorId, groupId);
+                
+                if (existingDebtOpt.isPresent()) {
+                    Debt existingDebt = existingDebtOpt.get();
+                    existingDebt.setAmount(existingDebt.getAmount().add(share));
+                    debtRepository.save(existingDebt);
+                } else {
+                    // Brand new debt entry
+                    Debt newDebt = Debt.builder()
+                        .group(group)
+                        .debtor(debtor)
+                        .creditor(creditor)
+                        .amount(share)
+                        .build();
+                    debtRepository.save(newDebt);
                 }
             }
         }

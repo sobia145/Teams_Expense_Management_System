@@ -958,3 +958,101 @@ td {
     align-items: stretch;
   }
 }
+
+/* 🚫 GLOBAL FIX: Remove number input spinners (Up/Down arrows) */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield !important; /* Firefox support */
+  appearance: textfield !important;
+}
+.btn-sm {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.approval-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.countdown-timer {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--brand-700);
+  background: var(--brand-100);
+  width: fit-content;
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-top: 4px;
+}
+
+.countdown-timer.expired {
+  background: var(--danger-100);
+  color: var(--danger-600);
+}
+
+.member-status-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.member-status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-elevated);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-soft);
+}
+
+.status-dot.approved {
+  background: var(--success-600);
+  box-shadow: 0 0 0 2px var(--success-100);
+}
+
+.status-dot.objected {
+  background: var(--danger-600);
+  box-shadow: 0 0 0 2px var(--danger-100);
+}
+
+.status-dot.pending {
+  background: var(--warning-500);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+
+/* Fix 1: Hide input number spinners */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}

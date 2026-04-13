@@ -32,4 +32,9 @@ public class Budget {
     @Builder.Default
     @Column(length = 50)
     private String period = "TRIP";
+
+    private String category;
+
+    @Column(name="custom_category")
+    private String customCategory;
 }

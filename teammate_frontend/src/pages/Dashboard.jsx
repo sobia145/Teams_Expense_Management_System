@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, useCallback } from 'react';
 import NotificationPanel from '../components/notification/NotificationPanel';
 import { AppContext } from '../context/AppContext';
 import formatCurrency from '../utils/formatCurrency';
@@ -8,26 +8,36 @@ import api from '../services/api';
 import AdminDashboard from './AdminDashboard';
 
 const Dashboard = () => {
-  const { groups, expenses, settlements } = useContext(AppContext);
   const { user } = useAuth();
+  const [stats, setStats] = useState({
+    approvedSpend: 0,
+    pendingApprovalsCount: 0,
+    pendingPaymentsCount: 0,
+    totalGroupsCount: 0
+  });
+
+  const fetchStats = useCallback(() => {
+    if (user?.userId && user?.role !== 'ADMIN') {
+        api.get(`/dashboard/stats/${user.userId}`)
+          .then(res => setStats(res.data))
+          .catch(err => console.error("Stats sync failed", err));
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
   
   // Master conditional layout structure distinctly separating Admin vs User Architecture
   if (user?.role === 'ADMIN') {
       return <AdminDashboard />;
   }
 
-  const activeGroupIds = new Set(groups.map(g => String(g.groupId)));
-  const approvedTotal = expenses
-    .filter((item) => item.status === 'APPROVED' && activeGroupIds.has(String(item.groupId)))
-    .reduce((sum, item) => sum + (item.totalAmount || 0), 0);
-
-  const pendingPayments = settlements.filter((item) => item.status !== 'PAID').length;
-
   const cards = [
-    { title: 'Total Groups', value: groups.length },
-    { title: 'Approved Spend', value: formatCurrency(approvedTotal) },
-    { title: 'Pending Payments', value: pendingPayments },
-    { title: 'Pending Approvals', value: expenses.filter((item) => item.status === 'PENDING').length }
+    { title: 'Total Groups', value: stats.totalGroupsCount },
+    { title: 'Approved Spend', value: formatCurrency(stats.approvedSpend) },
+    { title: 'Pending Payments', value: stats.pendingPaymentsCount },
+    { title: 'Pending Approvals', value: stats.pendingApprovalsCount }
   ];
 
   return (
@@ -44,7 +54,7 @@ const Dashboard = () => {
           </article>
         ))}
       </section>
-      <NotificationPanel />
+      <NotificationPanel onAction={fetchStats} />
     </div>
   );
 };

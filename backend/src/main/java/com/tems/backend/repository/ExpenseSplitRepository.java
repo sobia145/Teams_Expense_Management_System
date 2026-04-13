@@ -18,11 +18,15 @@ public interface ExpenseSplitRepository extends JpaRepository<ExpenseSplit, Inte
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM ExpenseSplit es WHERE es.expense.group.groupId = :groupId")
+    @Query("DELETE FROM ExpenseSplit es WHERE es.expense.expenseId IN (SELECT e.expenseId FROM Expense e WHERE e.group.groupId = :groupId)")
     void deleteByGroupId(@Param("groupId") Integer groupId);
 
     @Modifying
     @Transactional
     @Query("DELETE FROM ExpenseSplit es WHERE es.expense.expenseId IN :expenseIds")
     void deleteByExpenseIds(@Param("expenseIds") List<Integer> expenseIds);
+
+    @Modifying
+    @Transactional
+    void deleteByExpense(Expense expense);
 }

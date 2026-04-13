@@ -12,7 +12,7 @@ const ExpenseCard = ({ expense, onDeleteExpense, canDeleteExpense, getDeleteBloc
 
     const shouldDelete = window.confirm(`Delete expense "${expense.title}"?`);
     if (!shouldDelete) return;
-    onDeleteExpense?.(expense.id);
+    onDeleteExpense?.(expense.expenseId || expense.id);
   };
 
   return (
@@ -21,7 +21,7 @@ const ExpenseCard = ({ expense, onDeleteExpense, canDeleteExpense, getDeleteBloc
         <h4>{expense.title}</h4>
         <span className="badge">{statusLabel}</span>
       </div>
-      <p>{formatCurrency(expense.totalAmount || 0)}</p>
+      <p>{formatCurrency(expense.totalAmount || 0)} • <span className="category-tag">{expense.category === 'Other' && expense.customCategory ? expense.customCategory : expense.category}</span></p>
       <p>Paid by: {expense.paidBy?.name || 'Loading...'}</p>
       {isObjected && expense.objectionReason && (
         <p className="expense-objection-note">
@@ -40,7 +40,7 @@ const ExpenseCard = ({ expense, onDeleteExpense, canDeleteExpense, getDeleteBloc
         </button>
       </div>
       {isObjected && expense.objectionRaisedAt && <small>Objected on {formatDateTime(expense.objectionRaisedAt)}</small>}
-      <small>{formatDateTime(expense.createdAt)}</small>
+      <small>{formatDateTime(expense.createdAt || expense.expenseDate)}</small>
     </article>
   );
 };

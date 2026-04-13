@@ -13,10 +13,15 @@ import org.springframework.data.jpa.repository.Query;
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Integer> {
     List<Transaction> findByGroup_GroupIdOrderBySettledAtDesc(Integer groupId);
+    List<Transaction> findByGroup_GroupIdInOrderBySettledAtDesc(List<Integer> groupIds);
     List<Transaction> findByFromUser_NameOrToUser_NameOrderBySettledAtDesc(String fromName, String toName);
 
     @Modifying
     @Transactional
     @Query("DELETE FROM Transaction t WHERE t.group.groupId = :groupId")
     void deleteByGroupId(@Param("groupId") Integer groupId);
+
+    @Modifying
+    @Transactional
+    void deleteByGroup_GroupId(Integer groupId);
 }

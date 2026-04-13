@@ -9,12 +9,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.List;
 
 @Service
 public class GroupService {
     @Autowired
     private GroupRepository groupRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
     
     @Autowired
     private com.tems.backend.repository.GroupMemberRepository groupMemberRepository;
@@ -47,7 +52,15 @@ public class GroupService {
     private com.tems.backend.repository.BudgetAlertRepository budgetAlertRepository;
 
     public List<Group> getGroupsForUser(Integer userId) {
-        return groupRepository.findActiveGroupsByUserId(userId);
+        List<Group> activeGroups = groupRepository.findActiveGroupsByUserId(userId);
+        for (Group g : activeGroups) {
+            java.math.BigDecimal spent = expenseRepository.sumApprovedAmountByGroupId(g.getGroupId());
+            Long pending = approvalRepository.countByExpense_Group_GroupIdAndStatus(g.getGroupId(), "PENDING");
+            
+            g.setTotalSpent(spent != null ? spent : java.math.BigDecimal.ZERO);
+            g.setPendingApprovals(pending != null ? pending : 0L);
+        }
+        return activeGroups;
     }
     
     // Core Engine hook for Global Admin transparency
@@ -93,63 +106,65 @@ public class GroupService {
                 }
             }
         }
+
+        // --- STABILIZATION: ADD TO HISTORY LOG ---
+        HistoryLog groupLog = HistoryLog.builder()
+            .entityType("GROUP")
+            .entityId(savedGroup.getGroupId())
+            .action("CREATED")
+            .performedBy(creatorUserId)
+            .performedByName(creator.getName())
+            .newData("Trip formed: " + savedGroup.getName() + " (" + savedGroup.getCurrency() + ")")
+            .groupId(savedGroup.getGroupId())
+            .groupName(savedGroup.getName())
+            .build();
+        historyLogRepository.save(groupLog);
             
         return savedGroup;
     }
     
     @Transactional
     public void deleteGroup(Integer groupId, Integer userId) {
+        Group group = groupRepository.findById(groupId)
+            .orElseThrow(() -> new IllegalArgumentException("Group not found with ID: " + groupId));
+
+        // SECURITY CHECK: Only the creator (or an admin) can delete a group
+        if (!group.getCreatedBy().getUserId().equals(userId)) {
+            throw new IllegalStateException("SECURITY VIOLATION: Access Denied. Only the group creator can delete this trip.");
+        }
+
+        System.out.println("🚀 [DELETION] Starting heavy-duty teardown for Group: " + group.getName() + " (ID: " + groupId + ")");
+
         try {
-            // 1. Capture Group metadata for the audit trail before it's gone
-            Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new IllegalArgumentException("Group not found"));
-            String capturedGroupName = group.getName();
-
-            // --- Pre-fetch: Identify all records attached to this group ---
-            List<Integer> expenseIds = expenseRepository.findByGroup_GroupId(groupId)
-                .stream().map(com.tems.backend.entity.Expense::getExpenseId).toList();
+            // Standard JPA cascade removal (manually handling tables without full @OneToMany relationships)
+            budgetAlertRepository.deleteByGroup(group);
+            budgetRepository.deleteByGroup(group);
             
-            // 2. Atomic Sequential Cascade Deletion (Bottom-Up)
+            transactionRepository.deleteByGroup_GroupId(groupId);
+            debtRepository.deleteByGroup_GroupId(groupId);
             
-            // --- Phase A: Clear Leaf Nodes (Deep Children) ---
-            if (!expenseIds.isEmpty()) {
-                approvalRepository.deleteByExpenseIds(expenseIds);
-                expenseSplitRepository.deleteByExpenseIds(expenseIds);
+            // Clean up expenses and their complex sub-mappings
+            List<com.tems.backend.entity.Expense> groupExpenses = expenseRepository.findByGroup_GroupId(groupId);
+            for (com.tems.backend.entity.Expense expense : groupExpenses) {
+                approvalRepository.deleteByExpense(expense);
+                expenseSplitRepository.deleteByExpense(expense);
             }
-
-            // --- Phase B: Clear Ledger ---
-            transactionRepository.deleteByGroupId(groupId);
-            debtRepository.deleteByGroupId(groupId);
-
-            // --- Phase C: Clear Expenses ---
             expenseRepository.deleteByGroupId(groupId);
-
-            // --- Phase D: Budget Cleanup ---
-            budgetAlertRepository.deleteByGroupId(groupId);
-            budgetRepository.deleteByGroupId(groupId);
-
-            // --- Phase E: Clear Membership ---
-            groupMemberRepository.deleteByGroupId(groupId);
-
-            // --- Phase F: Physical Delete of the Group itself ---
+            
+            // Final teardown
+            groupMemberRepository.deleteByGroup_GroupId(groupId);
             groupRepository.deleteById(groupId);
             
-            // --- Audit Persistence ---
-            com.tems.backend.entity.User actor = userRepository.findById(userId).orElse(null);
-            String actorName = actor != null ? actor.getName() : "System";
+            // FORCE FLUSH: Ensure the database transaction is synchronized immediately 
+            // to prevent race conditions with frontend refreshes!
+            entityManager.flush();
+            entityManager.clear();
             
-            HistoryLog log = HistoryLog.builder()
-                .entityType("GROUP")
-                .entityId(groupId)
-                .groupName(capturedGroupName)
-                .action("PERMANENTLY_DELETED")
-                .performedBy(userId)
-                .performedByName(actorName)
-                .newData("Successfully performed a complete hard-cascade deletion of Group '" + capturedGroupName + "' and all linked records.")
-                .build();
-            historyLogRepository.save(log);
+            System.out.println("✅ [DELETION] Successfully purged Group " + groupId);
+            
         } catch (Exception e) {
-            throw e;
+            System.err.println("❌ [DELETION ERROR] Teardown failed: " + e.getMessage());
+            throw new RuntimeException("Database error during group deletion: " + e.getMessage());
         }
     }
 
@@ -167,6 +182,8 @@ public class GroupService {
             .performedBy(null) // System action
             .performedByName("System")
             .newData("Trip Locked for Group: " + group.getName() + ". Modifications are now disabled.")
+            .groupId(groupId)
+            .groupName(group.getName())
             .build();
         historyLogRepository.save(log);
 

@@ -31,5 +31,15 @@ export const expenseService = {
   getPendingApprovals: async (userId) => {
     const response = await api.get(`/approvals/user/${userId}/pending`);
     return response.data;
+  },
+
+  getExpensesByGroup: async (groupId) => {
+    const response = await api.get(`/expenses/group/${groupId}`);
+    return response.data;
+  },
+
+  deleteExpense: async (id) => {
+    // Persistent hard-delete of expense and its associated splits/approvals
+    await api.delete(`/expenses/${id}`);
   }
 };

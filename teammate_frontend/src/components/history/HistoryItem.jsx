@@ -17,7 +17,7 @@ const HistoryItem = ({ item }) => {
       </div>
       <p>{item.newData || item.details}</p>
       <small>
-        <strong>{item.performedByName || item.actor || 'System'}</strong> | {formatDateTime(item.time || item.createdAt)}
+        <strong>{item.performedByName || item.actor || 'System'}</strong> | {formatDateTime(item.createdAt || item.time)}
       </small>
     </article>
   );

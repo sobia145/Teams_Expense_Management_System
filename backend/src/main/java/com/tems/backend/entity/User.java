@@ -32,7 +32,7 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(nullable = false, name="password_hash")
+    @Column(nullable = true, name="password_hash")
     private String passwordHash;
 
     @Builder.Default
@@ -41,19 +41,20 @@ public class User implements UserDetails {
     
     // Explicit Database Safety Null-Bypass for the Admin UI layout rendering
     public String getRole() {
-        if ("admin@tems.com".equals(this.email)) return "ADMIN";
         return role != null && !role.trim().isEmpty() ? role : "USER";
     }
 
+    @Builder.Default
     @Column(length = 20)
-    private String phone;
+    private String phone = "";
 
     @Builder.Default
     @Column(nullable = false, name="is_deleted")
     private Boolean isDeleted = false;
 
+    @Builder.Default
     @Column(updatable = false, name="created_at")
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @PrePersist
     protected void onCreate() {

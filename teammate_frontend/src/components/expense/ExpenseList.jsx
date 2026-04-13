@@ -16,7 +16,7 @@ const ExpenseList = ({
       {expenses.length ? (
         expenses.map((expense) => (
           <ExpenseCard
-            key={expense.id}
+            key={expense.expenseId || expense.id}
             expense={expense}
             onDeleteExpense={onDeleteExpense}
             canDeleteExpense={canDeleteExpense}

@@ -24,6 +24,7 @@ public class Group {
     @Column(nullable = false, length = 100)
     private String name;
 
+    @Builder.Default
     @Column(length = 10, nullable = false)
     private String currency = "INR";
 
@@ -42,4 +43,10 @@ public class Group {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
     }
+
+    @Transient
+    private java.math.BigDecimal totalSpent;
+
+    @Transient
+    private Long pendingApprovals;
 }

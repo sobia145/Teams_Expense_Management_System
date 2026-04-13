@@ -20,4 +20,6 @@ public interface BudgetAlertRepository extends JpaRepository<BudgetAlert, Intege
     @Transactional
     @Query("DELETE FROM BudgetAlert ba WHERE ba.group.groupId = :groupId")
     void deleteByGroupId(@Param("groupId") Integer groupId);
+
+    void deleteByGroup(com.tems.backend.entity.Group group);
 }

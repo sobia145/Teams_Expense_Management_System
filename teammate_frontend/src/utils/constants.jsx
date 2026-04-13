@@ -11,7 +11,7 @@ export const NAV_LINKS = [
   { label: 'Users', path: '/admin/users' }
 ];
 
-export const BUDGET_CATEGORIES = ['Travel', 'Food', 'Stay', 'Activities', 'Other'];
+export const BUDGET_CATEGORIES = ['Food', 'Transport', 'Hotel', 'Entertainment', 'Shopping', 'Other'];
 
 export const STATUS_COLORS = {
   PENDING: 'var(--warning-600)',

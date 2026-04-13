@@ -78,5 +78,11 @@ public class DataInitializer implements CommandLineRunner {
             historyLogRepository.save(HistoryLog.builder().action("Group Formatted").entityType("GROUP").newData("Sobia tracked the formation of Goa Trip 2026.").performedBy(u1.getUserId()).performedByName(u1.getName()).build());
             historyLogRepository.save(HistoryLog.builder().action("Financial Inject").entityType("EXPENSE").newData("Resort deposit was securely tracked.").performedBy(u1.getUserId()).performedByName(u1.getName()).build());
         }
+
+        // --- DATA INTEGRITY PATCH: Fix 2 (Backfill legagy NULL categories) ---
+        int updatedRows = expenseRepository.backfillCategories();
+        if (updatedRows > 0) {
+            System.out.println("🔥 DATA INTEGRITY PATCH: Successfully backfilled " + updatedRows + " legacy NULL categories to 'General'");
+        }
     }
 }

@@ -11,6 +11,7 @@ import ExpensePage from './pages/ExpensePage';
 import GroupPage from './pages/GroupPage';
 import HistoryPage from './pages/HistoryPage';
 import LoginPage from './pages/LoginPage';
+import SignUpPage from './pages/SignupPage';
 import NotFound from './pages/NotFound';
 import SettlementPage from './pages/SettlementPage';
 
@@ -26,6 +27,7 @@ const App = () => {
         <Routes>
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignUpPage />} />
           </Route>
 
           <Route

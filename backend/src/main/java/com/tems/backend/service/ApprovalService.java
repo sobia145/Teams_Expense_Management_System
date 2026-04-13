@@ -1,16 +1,21 @@
 package com.tems.backend.service;
 
+import com.tems.backend.dto.NotificationDTO;
 import com.tems.backend.entity.Approval;
 import com.tems.backend.entity.Expense;
+import com.tems.backend.entity.ExpenseSplit;
 import com.tems.backend.repository.ApprovalRepository;
 import com.tems.backend.repository.ExpenseRepository;
+import com.tems.backend.repository.ExpenseSplitRepository;
 import com.tems.backend.repository.HistoryLogRepository;
 import com.tems.backend.entity.HistoryLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,10 +25,30 @@ public class ApprovalService {
     private final ExpenseRepository expenseRepository;
     private final HistoryLogRepository historyLogRepository;
     private final DebtService debtService;
+    private final ExpenseSplitRepository splitRepository;
 
-    public List<Approval> getPendingApprovalsForUser(Integer userId) {
-        // Self-Healing: Use a join query to ensure the group still exists for the related expense
-        return approvalRepository.findActivePendingApprovalsByUser(userId, "PENDING");
+    public List<NotificationDTO> getPendingApprovalsForUser(Integer userId) {
+        List<Approval> pending = approvalRepository.findActivePendingApprovalsByUser(userId, "PENDING");
+        
+        return pending.stream().map(a -> {
+            // Find the split for this specific user so we can show their share in the notification
+            BigDecimal myShare = splitRepository.findByExpense_ExpenseId(a.getExpense().getExpenseId())
+                    .stream()
+                    .filter(s -> s.getUser().getUserId().equals(userId))
+                    .map(ExpenseSplit::getAmountOwed)
+                    .findFirst()
+                    .orElse(BigDecimal.ZERO);
+
+            return NotificationDTO.builder()
+                .approvalId(a.getApprovalId())
+                .expenseId(a.getExpense().getExpenseId())
+                .expenseTitle(a.getExpense().getTitle())
+                .payerName(a.getExpense().getPaidBy().getName())
+                .amountOwedByMe(myShare)
+                .status(a.getStatus())
+                .objectionDeadline(a.getExpense().getObjectionDeadline())
+                .build();
+        }).collect(Collectors.toList());
     }
 
     @Transactional
@@ -80,9 +105,11 @@ public class ApprovalService {
             }
             if (allApproved) {
                 expense.setStatus("APPROVED");
-                Expense saved = expenseRepository.save(expense);
-                debtService.processApprovedExpense(saved);
-                return saved;
+                expenseRepository.save(expense);
+                System.out.println("DEBUG: All approved. Calling debtService for expense: " + expense.getExpenseId());
+                debtService.updateDebtsFromExpense(expense);
+                System.out.println("DEBUG: DebtService call completed.");
+                return expense;
             }
         }
 

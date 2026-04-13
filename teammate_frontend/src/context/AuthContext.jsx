@@ -10,8 +10,8 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     console.log("AuthContext routing secure login to Java Backend...");
     
-    // Uses the API Mapper to hit http://localhost:8080/api/users/login
-    const authResponse = await userService.login({ email, passwordHash: password });
+    // Uses the API Mapper to hit /api/auth/login
+    const authResponse = await userService.login({ email, password });
     
     // Save the newly generated JWT token for subsequent protected requests!
     if (authResponse.token) {
@@ -20,6 +20,11 @@ export const AuthProvider = ({ children }) => {
     
     // Extract the inner 'user' JSON object from the new AuthResponse payload
     const realJavaUser = authResponse.user || authResponse;
+    
+    // IDENTITY SYNC FIX: Ensure userId is the master property used across the app
+    if (!realJavaUser.userId && realJavaUser.id) {
+        realJavaUser.userId = realJavaUser.id;
+    }
     
     // Inject the real MySQL user directly into React's global nervous system!
     setUser(realJavaUser);

@@ -6,14 +6,16 @@ import { AppContext } from '../context/AppContext';
 import useAuth from '../hooks/useAuth';
 import { groupService } from '../services/groupService';
 import formatCurrency from '../utils/formatCurrency';
+import GroupExpenseLedger from '../components/group/GroupExpenseLedger';
 
 const GroupPage = () => {
   const { user } = useAuth();
-  const { groups, setGroups, expenses, addHistoryEvent, selectedGroupId, setSelectedGroupId } = useContext(AppContext);
+  const { groups, setGroups, addHistoryEvent, selectedGroupId, setSelectedGroupId } = useContext(AppContext);
   const selectedGroup = groups.find(g => String(g.groupId) === String(selectedGroupId)) || null;
   const [members, setMembers] = useState([]);
+  const [groupExpenses, setGroupExpenses] = useState([]);
+  const [loadingExpenses, setLoadingExpenses] = useState(false);
 
-  const groupExpenses = expenses.filter(e => String(e.groupId) === String(selectedGroupId) && e.status === 'APPROVED');
   const totalSpent = groupExpenses.reduce((sum, exp) => sum + (exp.totalAmount || 0), 0);
 
   const handleAddGroup = async (group) => {
@@ -31,11 +33,21 @@ const GroupPage = () => {
 
   useEffect(() => {
     if (selectedGroupId) {
+      // Fix 2: Fetch fresh expenses every time selection changes
+      setLoadingExpenses(true);
+      import('../services/expenseService').then(({ expenseService }) => {
+        expenseService.getExpensesByGroup(selectedGroupId)
+          .then(setGroupExpenses)
+          .catch(() => setGroupExpenses([]))
+          .finally(() => setLoadingExpenses(false));
+      });
+
       groupService.getGroupMembers(selectedGroupId)
         .then(setMembers)
         .catch(() => setMembers([]));
     } else {
       setMembers([]);
+      setGroupExpenses([]);
     }
   }, [selectedGroupId]);
 
@@ -46,8 +58,12 @@ const GroupPage = () => {
     // OPTIMISTIC UPDATE: Hide it immediately for a snappy feel!
     const previousGroups = [...groups];
     setGroups((prev) => prev.filter((group) => String(group.groupId) !== String(groupId)));
+    
     if (String(selectedGroupId) === String(groupId)) {
+        // Clear local group-specific state immediately to prevent visual lag
         setSelectedGroupId(null);
+        setMembers([]);
+        setGroupExpenses([]);
     }
 
     try {
@@ -87,7 +103,7 @@ const GroupPage = () => {
                 <div>
                     <h2 style={{ margin: 0, color: 'var(--brand-800)' }}>{selectedGroup.name} Overview</h2>
                     <p style={{ margin: '0.5rem 0 0 0', color: 'var(--brand-600)', fontSize: '0.9rem' }}>
-                        Active Trip | {selectedGroup.currency || 'INR'}
+                        Active Team | {selectedGroup.currency || 'INR'}
                     </p>
                 </div>
                 <div style={{ display: 'flex', gap: '2rem' }}>
@@ -124,6 +140,10 @@ const GroupPage = () => {
           />
         ))}
       </section>
+      
+      {selectedGroupId && (
+        <GroupExpenseLedger expenses={groupExpenses} />
+      )}
     </div>
   );
 };

@@ -1,5 +1,6 @@
 package com.tems.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -38,6 +39,7 @@ public class HistoryLog {
     @Column(name="group_name")
     private String groupName;
     
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @Column(name="created_at", updatable = false)
     private LocalDateTime createdAt;
 

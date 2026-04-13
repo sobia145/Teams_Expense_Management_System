@@ -16,10 +16,18 @@ import org.springframework.data.jpa.repository.Query;
 @Repository
 public interface DebtRepository extends JpaRepository<Debt, Integer> {
     List<Debt> findByGroup_GroupId(Integer groupId);
+    List<Debt> findByGroup_GroupIdIn(List<Integer> groupIds);
     Optional<Debt> findByGroupAndDebtorAndCreditor(Group group, User debtor, User creditor);
+    Optional<Debt> findByDebtor_UserIdAndCreditor_UserIdAndGroup_GroupId(Integer debtorId, Integer creditorId, Integer groupId);
+    
+    long countByDebtor_UserId(Integer debtorId);
 
     @Modifying
     @Transactional
     @Query("DELETE FROM Debt d WHERE d.group.groupId = :groupId")
     void deleteByGroupId(@Param("groupId") Integer groupId);
+
+    @Modifying
+    @Transactional
+    void deleteByGroup_GroupId(Integer groupId);
 }

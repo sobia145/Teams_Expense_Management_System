@@ -10,6 +10,8 @@ public class ExpenseRequest {
     private Integer groupId;
     private Integer paidBy;
     private Integer categoryId;
+    private String category;
+    private String customCategory;
     private String title;
     private BigDecimal totalAmount;
     private LocalDate expenseDate;

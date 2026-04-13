@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import './LoginPage.css';
 
@@ -7,6 +7,7 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   
   // Hook into the Global Security State!
@@ -14,6 +15,13 @@ const LoginPage = () => {
   
   // React Router hook for redirecting post-login
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.message) {
+      setSuccess(location.state.message);
+    }
+  }, [location]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -35,8 +43,13 @@ const LoginPage = () => {
       navigate('/dashboard'); 
     } catch (err) {
       console.error(err);
-      // Let's render the exact Axios error context instead of hiding it!
-      setError("System Network Error: " + err.message);
+      // EXTRACT SPECIFIC BACKEND MESSAGE: Showing real feedback instead of generic status codes
+      const data = err.response?.data;
+      if (data && data.message) {
+        setError(data.message);
+      } else {
+        setError("Login Failed: " + (err.message || "Unknown error"));
+      }
     } finally {
       setLoading(false);
     }
@@ -60,10 +73,11 @@ const LoginPage = () => {
           TEMS
         </div>
 
-        <h3>Sign in</h3>
+        <h3>Login</h3>
         <p className="subtitle">Please login to continue to your account.</p>
 
         {error && <div className="error-message">{error}</div>}
+        {success && <div className="success-message" style={{color: '#10b981', background: '#dcfce7', padding: '12px', borderRadius: '8px', fontSize: '0.9rem', marginBottom: '15px'}}>{success}</div>}
 
         <form className="auth-form" onSubmit={handleLogin}>
           <div className="input-wrap">
@@ -95,6 +109,10 @@ const LoginPage = () => {
             {loading ? "Authenticating via Java..." : "Sign in"}
           </button>
         </form>
+
+        <p className="auth-footer" style={{marginTop: '20px', textAlign: 'center', fontSize: '14px', color: 'var(--slate-500)'}}>
+          New here? <Link to="/signup" style={{color: '#3b82f6', fontWeight: '600'}}>Create an account</Link>
+        </p>
       </div>
     </div>
   );

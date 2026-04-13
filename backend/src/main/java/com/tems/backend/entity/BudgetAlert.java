@@ -23,6 +23,11 @@ public class BudgetAlert {
     
     private BigDecimal exceededAmount;
     
+    private Integer thresholdType; // 80 or 100
+    
+    @Column(name="custom_category")
+    private String customCategory;
+    
     @Column(name="created_at", updatable=false)
     private LocalDateTime createdAt;
     

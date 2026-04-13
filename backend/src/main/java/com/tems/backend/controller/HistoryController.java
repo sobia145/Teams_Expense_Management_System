@@ -20,12 +20,16 @@ public class HistoryController {
     @GetMapping
     public ResponseEntity<List<HistoryLog>> getHistory(
             @RequestParam(required = false) String name,
-            @RequestParam(required = false) Integer groupId) {
+            @RequestParam(required = false) Integer groupId,
+            @RequestParam(required = false) Integer userId) {
         
         List<HistoryLog> logs;
         if (groupId != null) {
             // Priority: Group-wide activity feed
             logs = historyLogRepository.findByGroupIdOrderByCreatedAtDesc(groupId);
+        } else if (userId != null) {
+            // New: Universal Activity Feed (All groups I'm in)
+            logs = historyLogRepository.findHistoryForUserGroups(userId);
         } else if (name != null && !name.isEmpty()) {
             // Fallback: Individual activity feed
             logs = historyLogRepository.findAllByPerformedByNameOrderByCreatedAtDesc(name);

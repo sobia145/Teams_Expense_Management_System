@@ -15,8 +15,15 @@ export const AppProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [history, setHistory] = useState([]);
   const [settlements, setSettlements] = useState([]);
-  const [selectedGroupId, setSelectedGroupId] = useState(null);
-  const [tripLocked, setTripLocked] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState(() => {
+    if (typeof window !== 'undefined') {
+        const saved = window.localStorage.getItem('tems-selected-group');
+        return saved ? parseInt(saved) : null;
+    }
+    return null;
+  });
+
+  const [groupLocked, setGroupLocked] = useState(false);
   const [theme, setTheme] = useState(() => {
     const savedTheme = typeof window !== 'undefined' ? window.localStorage.getItem('tems-theme') : null;
 
@@ -27,6 +34,17 @@ export const AppProvider = ({ children }) => {
     const prefersDark = typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches;
     return prefersDark ? 'dark' : 'light';
   });
+
+  // Sync selectedGroupId with localStorage for Global Persistence!
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        if (selectedGroupId) {
+            window.localStorage.setItem('tems-selected-group', selectedGroupId.toString());
+        } else {
+            window.localStorage.removeItem('tems-selected-group');
+        }
+    }
+  }, [selectedGroupId]);
 
   // CRITICAL FIX: Use String coercion to ensure robust matching even if IDs come from different types (JSON number vs Route string)
   const selectedGroup = useMemo(() => {
@@ -55,7 +73,7 @@ export const AppProvider = ({ children }) => {
             // Fallback: Show personal activity
             const endpoint = selectedGroupId 
                 ? `/history?groupId=${selectedGroupId}` 
-                : `/history?name=${encodeURIComponent(currentUser.name)}`;
+                : `/history?userId=${currentUser.userId}`;
                 
             const res = await api.get(endpoint);
             setHistory(res.data || []);
@@ -63,36 +81,56 @@ export const AppProvider = ({ children }) => {
     } catch (err) {
         console.error("History sync failed", err);
     }
-  }, [selectedGroupId]);
+  }, []); // Only rebuild if user identity truly changes, not on every group switch
 
-  // Master Bootstrapper
+  const refreshSettlements = useCallback(async () => {
+    if (!user || !user.userId) return;
+    try {
+        const { settlementService } = await import('../services/settlementService');
+        // Fix: Fetch by group if selected, otherwise fetch UNIVERSAL list for all user's groups
+        const data = selectedGroupId 
+            ? await settlementService.getSettlements(selectedGroupId)
+            : await settlementService.getUserSettlements(user.userId);
+            
+        setSettlements(data || []);
+    } catch (err) {
+        console.error("Settlement re-sync failed", err);
+    }
+  }, [selectedGroupId, user]);
+
+  // Master Bootstrapper - Runs exactly ONCE when the user logs in
   useEffect(() => {
     if (user && user.userId) {
         groupService.getGroupsForApp(user).then(setGroups);
+        // Only fetch GLOBAL data here. Group-specific data is handled by localized effects.
         expenseService.getExpenses(user).then(setExpenses);
         expenseService.getPendingApprovals(user.userId).then(setNotifications);
-        refreshHistory(user);
+        
+        // Initial global history fetch
+        adminService.getHistoryLogs()
+            .then(setHistory)
+            .catch(() => refreshHistory(user));
     } else {
         setGroups([]);
         setExpenses([]);
         setNotifications([]);
         setHistory([]);
     }
-  }, [user, refreshHistory]);
+  }, [user]); // Removed refreshHistory as a dependency to stop loops!
 
   useEffect(() => {
     if (selectedGroupId) {
-        import('../services/settlementService').then(({ settlementService }) => {
-            settlementService.getSettlements(selectedGroupId).then(setSettlements);
-        });
+        refreshSettlements();
+        refreshHistory(user); // Fetch group-specific history only when selection changes
         if (selectedGroup) {
-            setTripLocked(selectedGroup.isLocked || false);
+            setGroupLocked(selectedGroup.isLocked || false);
         }
     } else {
         setSettlements([]);
-        setTripLocked(false);
+        setGroupLocked(false);
+        if (user) refreshHistory(user); // Revert to global history
     }
-  }, [selectedGroupId, selectedGroup]);
+  }, [selectedGroupId, selectedGroup, refreshSettlements, user]);
 
   const toggleTheme = () => {
     setTheme((current) => (current === 'light' ? 'dark' : 'light'));
@@ -122,7 +160,7 @@ export const AppProvider = ({ children }) => {
         console.warn("Audit persistence failed, using local fallback", err);
         setHistory(prev => [{ ...logPayload, createdAt: new Date().toISOString() }, ...prev]);
     }
-  }, [user, selectedGroupId, refreshHistory]);
+  }, [user, selectedGroupId, selectedGroup, refreshHistory]);
 
   const value = useMemo(
     () => ({
@@ -141,14 +179,15 @@ export const AppProvider = ({ children }) => {
       addHistoryEvent,
       settlements,
       setSettlements,
-      tripLocked,
-      setTripLocked,
+      groupLocked,
+      setGroupLocked,
       theme,
       setTheme,
       toggleTheme,
-      refreshHistory: () => refreshHistory(user)
+      refreshHistory: () => refreshHistory(user),
+      refreshSettlements
     }),
-    [groups, selectedGroupId, selectedGroup, expenses, budgets, notifications, history, addHistoryEvent, settlements, tripLocked, theme, user]
+    [groups, selectedGroupId, selectedGroup, expenses, budgets, notifications, history, addHistoryEvent, settlements, groupLocked, theme, user, refreshHistory, refreshSettlements]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
