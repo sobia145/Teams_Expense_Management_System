@@ -3,7 +3,8 @@ import axios from 'axios';
 // Create a globally configured Axios instance targeting our Java Spring Boot backend!
 // Say goodbye to the fake timer logic!
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api', 
+  // FORCE-FIX: Hardcoding because Netlify environment variable injection is failing
+  baseURL: 'https://tems-backend-c2sd.onrender.com/api', 
   headers: {
     'Content-Type': 'application/json',
   },
