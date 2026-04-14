@@ -198,8 +198,13 @@ public class ExpenseService {
         if (principal instanceof User) {
             User authUser = (User) principal;
             if (!authUser.getUserId().equals(expense.getPaidBy().getUserId())) {
-                throw new IllegalStateException("CONFLICT: Only the person who paid for this expense can delete it.");
+                throw new IllegalStateException("SECURITY VIOLATION: Access Denied. Only the person who added this expense (" + expense.getPaidBy().getName() + ") can delete it.");
             }
+        }
+
+        // SETTLEMENT SHIELD: Prevent deletion if the expense is already approved or being settled
+        if ("APPROVED".equalsIgnoreCase(expense.getStatus())) {
+            throw new IllegalStateException("DELETION BLOCKED: This expense has already been approved by the team. To maintain accurate records, approved expenses cannot be deleted. Please use a new expense for corrections.");
         }
 
         // STEP 1: Audit Log before deletion (while we still have data)

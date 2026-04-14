@@ -52,7 +52,7 @@ public class ApprovalService {
     }
 
     @Transactional
-    public Expense updateApprovalStatus(Integer expenseId, Integer userId, String status) {
+    public Expense updateApprovalStatus(Integer expenseId, Integer userId, String status, String reason) {
         // Find all approvals for this expense
         List<Approval> approvals = approvalRepository.findByExpense_ExpenseId(expenseId);
         
@@ -71,16 +71,22 @@ public class ApprovalService {
         
         // Update their specific ticket
         targetApproval.setStatus(status);
+        targetApproval.setReason(reason); // Save the 'why' behind the decision
         approvalRepository.save(targetApproval);
 
         // Core Audit: Log which specific user performed the approval/objection
+        String logMessage = "User " + targetApproval.getUser().getName() + " updated approval status for expense #" + expenseId + " to " + status;
+        if (reason != null && !reason.isBlank()) {
+            logMessage += " | Reason: " + reason;
+        }
+
         HistoryLog log = HistoryLog.builder()
             .entityType("APPROVAL")
             .entityId(expenseId)
             .action(status)
             .performedBy(userId)
             .performedByName(targetApproval.getUser().getName())
-            .newData("User " + targetApproval.getUser().getName() + " updated approval status for expense #" + expenseId + " to " + status)
+            .newData(logMessage)
             .build();
         historyLogRepository.save(log);
         

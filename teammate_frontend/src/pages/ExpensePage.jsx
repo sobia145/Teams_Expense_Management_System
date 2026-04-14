@@ -180,7 +180,8 @@ const ExpensePage = () => {
         const updatedExpense = await expenseService.updateStatus({
              expenseId, 
              userId: user.userId, 
-             status: 'OBJECTED' 
+             status: 'OBJECTED',
+             reason: objectionReason.trim()
         });
 
         setExpenses((prev) =>

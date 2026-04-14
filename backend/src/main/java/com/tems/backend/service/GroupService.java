@@ -150,6 +150,15 @@ public class GroupService {
             throw new IllegalStateException("SECURITY VIOLATION: Access Denied. Only the group creator can delete this trip.");
         }
 
+        // FINANCIAL INTERLOCK: Prevent deletion if unpaid debts exist
+        List<Debt> activeDebts = debtRepository.findByGroup_GroupId(groupId);
+        boolean hasUnpaid = activeDebts.stream()
+            .anyMatch(d -> d.getAmount().compareTo(java.math.BigDecimal.ZERO) > 0);
+            
+        if (hasUnpaid) {
+            throw new IllegalStateException("DELETION BLOCKED: This group cannot be deleted because there are still active unpaid debts. Please settle all payments first.");
+        }
+
         System.out.println("🚀 [DELETION] Starting heavy-duty teardown for Group: " + group.getName() + " (ID: " + groupId + ")");
 
         try {

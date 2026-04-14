@@ -29,9 +29,11 @@ public class ApprovalController {
     public ResponseEntity<Expense> setApprovalStatus(
             @PathVariable Integer expenseId,
             @PathVariable Integer userId,
-            @PathVariable String status) {
+            @PathVariable String status,
+            @RequestBody(required = false) Map<String, String> payload) {
         
-        return ResponseEntity.ok(approvalService.updateApprovalStatus(expenseId, userId, status));
+        String reason = (payload != null) ? payload.get("reason") : null;
+        return ResponseEntity.ok(approvalService.updateApprovalStatus(expenseId, userId, status, reason));
     }
 
     // Legacy handler for compatibility

@@ -135,6 +135,7 @@ const GroupPage = () => {
           <GroupCard
             key={group.groupId}
             group={group}
+            currentUser={user} // Pass identity for security check
             onSelect={() => setSelectedGroupId(group.groupId)}
             onDeleteGroup={handleDeleteGroup}
           />

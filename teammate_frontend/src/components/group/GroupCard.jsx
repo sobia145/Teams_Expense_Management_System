@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import formatCurrency from '../../utils/formatCurrency';
 import { groupService } from '../../services/groupService';
 
-const GroupCard = ({ group, onSelect, onDeleteGroup }) => {
+const GroupCard = ({ group, onSelect, onDeleteGroup, currentUser }) => {
   const [realMembers, setRealMembers] = useState([]);
 
   // Fetch the real teammates bridging map the moment the card mounts!
@@ -33,11 +33,14 @@ const GroupCard = ({ group, onSelect, onDeleteGroup }) => {
       <p>Total spent: {formatCurrency(group.totalSpent || 0)}</p>
       <p>Pending approvals: {group.pendingApprovals || 0}</p>
       <p>{group.isLocked ? 'Team Locked' : 'Team Active'}</p>
-      <div className="card-actions">
-        <button className="btn btn-danger" type="button" onClick={handleDelete}>
-          Delete Group
-        </button>
-      </div>
+      
+      {currentUser && group.createdBy && String(group.createdBy.userId) === String(currentUser.userId) && (
+        <div className="card-actions">
+          <button className="btn btn-danger" type="button" onClick={handleDelete}>
+            Delete Group
+          </button>
+        </div>
+      )}
     </article>
   );
 };

@@ -21,4 +21,7 @@ public class Approval {
     private User user; 
     
     private String status; 
+    
+    @Column(length = 255)
+    private String reason; // The 'why' behind an objection or approval
 }

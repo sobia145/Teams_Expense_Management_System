@@ -22,9 +22,10 @@ export const expenseService = {
     return response.data;
   },
 
-  updateStatus: async ({ expenseId, userId, status }) => {
+  updateStatus: async ({ expenseId, userId, status, reason }) => {
     // Directly update approval tickets in MySQL based on objection window
-    const response = await api.post(`/approvals/${expenseId}/status/${userId}`, { status });
+    // Now including the 'reason' payload for transparent team disputes
+    const response = await api.post(`/approvals/${expenseId}/status/${userId}/${status}`, { reason });
     return response.data;
   },
 

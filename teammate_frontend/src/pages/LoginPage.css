@@ -120,8 +120,29 @@
   font-size: 0.9rem;
 }
 
+/* Auth Footer Visibility Fix */
+.auth-footer {
+  margin-top: 30px;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #1e293b; /* Deep slate - perfect visibility */
+  font-weight: 500;
+}
+
+.auth-footer a {
+  color: #4f46e5;
+  text-decoration: none;
+  font-weight: 700;
+  margin-left: 5px;
+}
+
+.auth-footer a:hover {
+  text-decoration: underline;
+}
+
 /* Responsiveness */
 @media (max-width: 900px) {
   .login-container { flex-direction: column; }
   .login-graphic-pane { display: none; }
+  .login-form-pane { width: 100%; padding: 40px 20px; }
 }

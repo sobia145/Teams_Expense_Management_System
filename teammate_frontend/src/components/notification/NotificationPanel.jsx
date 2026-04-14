@@ -14,10 +14,21 @@ const NotificationPanel = ({ onAction }) => {
       if (!target || !user) return;
 
       const expenseId = target.expenseId || target.id;
+      let reason = null;
 
-      // Physically persist the choice in MySQL
+      // PROMPT FOR REASON: Only if raising an objection
+      if (status === 'OBJECTED') {
+          reason = window.prompt("⚠️ REASON REQUIRED: Please explain why you are objecting to this expense (e.g., 'incorrect amount', 'not my share', etc.)");
+          
+          if (!reason || reason.trim() === '') {
+              alert("You must provide a reason to object. Objection cancelled.");
+              return;
+          }
+      }
+
+      // Physically persist the choice + reason in MySQL
       const endpoint = `/approvals/${expenseId}/status/${user.userId}/${status}`;
-      await api.post(endpoint);
+      await api.post(endpoint, { reason: reason }); // Pass the reason in the payload!
 
       // Remove from UI state after DB confirmation
       setNotifications((prev) => prev.filter((item) => item.approvalId !== notificationId));

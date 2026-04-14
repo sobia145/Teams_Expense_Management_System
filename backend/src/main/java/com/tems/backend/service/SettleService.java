@@ -106,6 +106,15 @@ public class SettleService {
         User toUser = userRepository.findById(request.getToUserId()).orElseThrow();
         BigDecimal amount = request.getAmount();
 
+        // STEP 1: SECURITY ENFORCEMENT - Only the RECEIVER (Creditor) can mark as paid!
+        Object principal = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof User) {
+            User authUser = (User) principal;
+            if (!authUser.getUserId().equals(toUser.getUserId())) {
+                throw new IllegalStateException("SECURITY VIOLATION: Only the person receiving the money (the creditor) can mark this as paid.");
+            }
+        }
+
         // 1. One-click Toggle: Remove the debt entirely from the live ledger
         Debt activeDebt = debtRepository.findByGroupAndDebtorAndCreditor(group, fromUser, toUser)
                 .orElseThrow(() -> new IllegalArgumentException("No active debt found between these users in this group."));

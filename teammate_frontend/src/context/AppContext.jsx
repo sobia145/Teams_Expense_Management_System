@@ -98,25 +98,61 @@ export const AppProvider = ({ children }) => {
     }
   }, [selectedGroupId, user]);
 
+  // SMART SYNC ENGINE: Re-fetches absolutely everything to keep teammates in lock-step
+  const refreshAllData = useCallback(async () => {
+    if (!user || !user.userId) return;
+    
+    console.log("🔄 SMART SYNC: Refreshing global team data...");
+    try {
+        const [newGroups, newExpenses, newNotes] = await Promise.all([
+            groupService.getGroupsForApp(user),
+            expenseService.getExpenses(user),
+            expenseService.getPendingApprovals(user.userId)
+        ]);
+        
+        setGroups(newGroups || []);
+        setExpenses(newExpenses || []);
+        setNotifications(newNotes || []);
+        
+        refreshHistory(user);
+        refreshSettlements();
+    } catch (err) {
+        console.warn("Smart Sync failed (likely cold start), will retry next cycle.", err);
+    }
+  }, [user, refreshHistory, refreshSettlements]);
+
+  // AUTO-SYNC LISTENERS: Keep app fresh even if user doesn't logout
+  useEffect(() => {
+    if (!user) return;
+
+    // 1. Timer-based refresh (every 45 seconds)
+    const interval = setInterval(refreshAllData, 45000);
+
+    // 2. Focus-based refresh (refresh immediately when teammate returns to the tab)
+    const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+            refreshAllData();
+        }
+    };
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+        clearInterval(interval);
+        window.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user, refreshAllData]);
+
   // Master Bootstrapper - Runs exactly ONCE when the user logs in
   useEffect(() => {
     if (user && user.userId) {
-        groupService.getGroupsForApp(user).then(setGroups);
-        // Only fetch GLOBAL data here. Group-specific data is handled by localized effects.
-        expenseService.getExpenses(user).then(setExpenses);
-        expenseService.getPendingApprovals(user.userId).then(setNotifications);
-        
-        // Initial global history fetch
-        adminService.getHistoryLogs()
-            .then(setHistory)
-            .catch(() => refreshHistory(user));
+        refreshAllData();
     } else {
         setGroups([]);
         setExpenses([]);
         setNotifications([]);
         setHistory([]);
     }
-  }, [user]); // Removed refreshHistory as a dependency to stop loops!
+  }, [user, refreshAllData]);
 
   useEffect(() => {
     if (selectedGroupId) {

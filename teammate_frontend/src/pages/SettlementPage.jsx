@@ -47,7 +47,7 @@ const SettlementPage = () => {
                   <h4 className="section-title">📉 You Owe</h4>
                   <SettlementTable
                       rows={youOwe}
-                      onMarkPaid={markPaid}
+                      onMarkPaid={null} // DEBTORS CANNOT MARK AS PAID
                       disabled={groupLocked}
                       isOwner={true}
                   />
@@ -57,7 +57,7 @@ const SettlementPage = () => {
                   <h4 className="section-title">📈 Owed to You</h4>
                   <SettlementTable
                       rows={owedToYou}
-                      onMarkPaid={null}
+                      onMarkPaid={markPaid} // ONLY CREDITORS CAN VERIFY PAYMENT
                       disabled={groupLocked}
                       isOwner={false}
                   />
