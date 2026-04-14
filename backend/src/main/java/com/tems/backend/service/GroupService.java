@@ -173,12 +173,11 @@ public class GroupService {
             transactionRepository.deleteByGroup_GroupId(groupId);
             debtRepository.deleteByGroup_GroupId(groupId);
             
-            // Clean up expenses and their complex sub-mappings
-            List<com.tems.backend.entity.Expense> groupExpenses = expenseRepository.findByGroup_GroupId(groupId);
-            for (com.tems.backend.entity.Expense expense : groupExpenses) {
-                approvalRepository.deleteByExpense(expense);
-                expenseSplitRepository.deleteByExpense(expense);
-            }
+            // NEW: One-Shot Bulk Purge (Breaks FK locks by clearing everything simultaneously)
+            approvalRepository.deleteByGroupId(groupId);
+            expenseSplitRepository.deleteByGroupId(groupId);
+            
+            // Now safe to clear expenses
             expenseRepository.deleteByGroupId(groupId);
             
             // Final teardown
