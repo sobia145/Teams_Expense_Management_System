@@ -154,7 +154,7 @@ public class GroupService {
         // FINANCIAL INTERLOCK: Prevent deletion if unpaid debts exist
         List<Debt> activeDebts = debtRepository.findByGroup_GroupId(groupId);
         boolean hasUnpaid = activeDebts.stream()
-            .anyMatch(d -> d.getAmount().compareTo(java.math.BigDecimal.ZERO) > 0);
+            .anyMatch(d -> d.getAmount().compareTo(new java.math.BigDecimal("0.05")) > 0);
             
         if (hasUnpaid) {
             throw new IllegalStateException("DELETION BLOCKED: This group cannot be deleted because there are still active unpaid debts. Please settle all payments first.");
