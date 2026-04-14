@@ -12,7 +12,7 @@ public interface HistoryLogRepository extends JpaRepository<HistoryLog, Integer>
     java.util.List<HistoryLog> findAllByPerformedByNameOrderByCreatedAtDesc(String name);
     java.util.List<HistoryLog> findByGroupIdOrderByCreatedAtDesc(Integer groupId);
 
-    @Query("SELECT h FROM HistoryLog h WHERE h.groupId IN (SELECT gm.group.groupId FROM GroupMember gm WHERE gm.user.userId = :userId) ORDER BY h.createdAt DESC")
+    @Query("SELECT h FROM HistoryLog h WHERE h.groupId IN (SELECT gm.group.groupId FROM GroupMember gm WHERE gm.user.userId = :userId) OR h.performedBy = :userId ORDER BY h.createdAt DESC")
     java.util.List<HistoryLog> findHistoryForUserGroups(@Param("userId") Integer userId);
 
     @org.springframework.data.jpa.repository.Modifying

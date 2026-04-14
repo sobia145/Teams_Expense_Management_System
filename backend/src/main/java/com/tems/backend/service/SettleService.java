@@ -60,7 +60,7 @@ public class SettleService {
         // 1. Fetch live UNPAID debts (filter out zero amounts as safety Fix 2)
         List<Debt> unpaid = debtRepository.findByGroup_GroupId(groupId);
         List<SettlementDTO> overview = unpaid.stream()
-                .filter(d -> d.getAmount().compareTo(java.math.BigDecimal.ZERO) > 0)
+                .filter(d -> d.getAmount().compareTo(new java.math.BigDecimal("0.05")) > 0)
                 .map(d -> SettlementDTO.builder()
                 .id(d.getDebtId())
                 .groupId(groupId)
@@ -155,7 +155,7 @@ public class SettleService {
         // 2. Fetch all live UNPAID debts for these groups
         List<Debt> unpaid = debtRepository.findByGroup_GroupIdIn(groupIds);
         List<SettlementDTO> overview = unpaid.stream()
-                .filter(d -> d.getAmount().compareTo(java.math.BigDecimal.ZERO) > 0)
+                .filter(d -> d.getAmount().compareTo(new java.math.BigDecimal("0.05")) > 0)
                 .map(d -> SettlementDTO.builder()
                         .id(d.getDebtId())
                         .groupId(d.getGroup().getGroupId())
