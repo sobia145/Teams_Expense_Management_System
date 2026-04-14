@@ -58,6 +58,8 @@ public class AuthController {
                 put("message", e.getMessage());
             }});
         }
+    }
+
     @GetMapping("/ping")
     public ResponseEntity<String> ping() {
         return ResponseEntity.ok("pong");
