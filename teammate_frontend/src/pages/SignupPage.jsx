@@ -130,8 +130,8 @@ const SignUpPage = () => {
             </button>
           </form>
 
-          <p className="auth-footer" style={{marginTop: '20px', textAlign: 'center', fontSize: '14px', color: 'var(--slate-500)'}}>
-            Already have an account? <Link to="/login" style={{color: '#3b82f6', fontWeight: '600'}}>Login</Link>
+          <p className="auth-footer">
+            Already have an account? <Link to="/login">Login</Link>
           </p>
         </div>
       </div>

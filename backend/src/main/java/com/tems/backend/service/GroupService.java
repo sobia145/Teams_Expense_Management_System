@@ -163,6 +163,9 @@ public class GroupService {
         System.out.println("🚀 [DELETION] Starting heavy-duty teardown for Group: " + group.getName() + " (ID: " + groupId + ")");
 
         try {
+            // --- NEW: History Purge (Ensure audit trail doesn't block parent deletion) ---
+            historyLogRepository.deleteByGroupId(groupId);
+
             // Standard JPA cascade removal (manually handling tables without full @OneToMany relationships)
             budgetAlertRepository.deleteByGroup(group);
             budgetRepository.deleteByGroup(group);
@@ -183,7 +186,6 @@ public class GroupService {
             groupRepository.deleteById(groupId);
             
             // FORCE FLUSH: Ensure the database transaction is synchronized immediately 
-            // to prevent race conditions with frontend refreshes!
             entityManager.flush();
             entityManager.clear();
             
@@ -191,6 +193,8 @@ public class GroupService {
             
         } catch (Exception e) {
             System.err.println("❌ [DELETION ERROR] Teardown failed: " + e.getMessage());
+            e.printStackTrace();
+            // Upgraded transparency: Return the REAL database message (e.g., FK Violation) to the UI
             throw new RuntimeException("Database error during group deletion: " + e.getMessage());
         }
     }

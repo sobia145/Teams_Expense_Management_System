@@ -14,4 +14,9 @@ public interface HistoryLogRepository extends JpaRepository<HistoryLog, Integer>
 
     @Query("SELECT h FROM HistoryLog h WHERE h.groupId IN (SELECT gm.group.groupId FROM GroupMember gm WHERE gm.user.userId = :userId) ORDER BY h.createdAt DESC")
     java.util.List<HistoryLog> findHistoryForUserGroups(@Param("userId") Integer userId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Query("DELETE FROM HistoryLog h WHERE h.groupId = ?1")
+    void deleteByGroupId(Integer groupId);
 }
