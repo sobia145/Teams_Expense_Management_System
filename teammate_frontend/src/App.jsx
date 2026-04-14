@@ -19,8 +19,17 @@ import SettlementPage from './pages/SettlementPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AdminGroupsPage from './pages/AdminGroupsPage';
 import AdminExpensesPage from './pages/AdminExpensesPage';
+import { useEffect } from 'react';
+import api from './services/api';
 
 const App = () => {
+  // NUCLEAR WARMUP: Proactively wake up the Render backend as soon as the site is opened!
+  useEffect(() => {
+    api.get('/auth/ping').catch(() => {
+      // Sliently handle errors - we just want to trigger the server boot process.
+    });
+  }, []);
+
   return (
     <AuthProvider>
       <AppProvider>

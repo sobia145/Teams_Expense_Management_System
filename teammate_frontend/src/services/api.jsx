@@ -8,7 +8,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 60000, // 60 seconds - Give the backend time to wake up!
+  timeout: 120000, // 120 seconds - Survives any Render cold start!
 });
 
 console.log("🚀 TEMS API INITIALIZED WITH BASEURL:", api.defaults.baseURL);
