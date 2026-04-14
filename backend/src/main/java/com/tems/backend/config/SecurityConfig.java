@@ -60,6 +60,9 @@ public class SecurityConfig {
         allowedOrigins.add("http://localhost:3000");
         allowedOrigins.add("http://localhost:5173");
         
+        // Vercel Migration: Whitelist the new frontend origin
+        allowedOrigins.add("https://teams-expense-management-system.vercel.app");
+        
         configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control", "X-Requested-With"));
