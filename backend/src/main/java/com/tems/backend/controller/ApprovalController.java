@@ -48,6 +48,6 @@ public class ApprovalController {
             return ResponseEntity.badRequest().build();
         }
         
-        return ResponseEntity.ok(approvalService.updateApprovalStatus(expenseId, userId, status));
+        return ResponseEntity.ok(approvalService.updateApprovalStatus(expenseId, userId, status, null));
     }
 }

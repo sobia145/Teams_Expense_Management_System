@@ -1,6 +1,7 @@
 package com.tems.backend.service;
 
 import com.tems.backend.entity.Group;
+import com.tems.backend.entity.Debt;
 import com.tems.backend.repository.GroupRepository;
 import com.tems.backend.repository.ExpenseRepository;
 import com.tems.backend.repository.HistoryLogRepository;
