@@ -49,7 +49,7 @@ public class GroupController {
             groupService.deleteGroup(groupId, userId);
             return ResponseEntity.ok("Group deleted successfully");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Delete Failed: An internal server error occurred during cascade deletion.");
+            return ResponseEntity.status(500).body("Delete Failed: " + e.getMessage());
         }
     }
 
