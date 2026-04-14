@@ -46,10 +46,22 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(frontendUrl));
+        
+        // Ensure Frontend URL and its 'www' variation are both allowed!
+        java.util.List<String> allowedOrigins = new java.util.ArrayList<>();
+        if (frontendUrl != null) {
+            allowedOrigins.add(frontendUrl);
+            if (frontendUrl.startsWith("https://") && !frontendUrl.contains("www.")) {
+                allowedOrigins.add(frontendUrl.replace("https://", "https://www."));
+            }
+        }
+        
+        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control", "X-Requested-With"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L); // Allow browsers to remember this permission for 1 hour
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
