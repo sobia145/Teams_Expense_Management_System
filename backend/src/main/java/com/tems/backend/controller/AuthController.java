@@ -22,7 +22,6 @@ public class AuthController {
         try {
             System.out.println("Processing registration request for: " + user.getEmail());
             
-            // EXPLICIT ATTRIBUTE INITIALIZATION: Ensuring mandatory fields are set
             user.setIsDeleted(false);
             user.setRole("USER");
             user.setCreatedAt(java.time.LocalDateTime.now());
@@ -31,18 +30,18 @@ public class AuthController {
             return ResponseEntity.ok(savedUser);
         } catch (IllegalArgumentException e) {
             System.err.println("Registration Validation Failed: " + e.getMessage());
-            return ResponseEntity.badRequest().body(new HashMap<String, String>() {{
-                put("error", "Bad Request");
-                put("message", e.getMessage());
-            }});
+            HashMap<String, String> errorMap = new HashMap<>();
+            errorMap.put("error", "Bad Request");
+            errorMap.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorMap);
         } catch (Exception e) {
             System.err.println("CRITICAL REGISTRATION ERROR: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(500).body(new HashMap<String, String>() {{
-                put("error", "Internal Server Error");
-                put("message", "Registration failed: " + e.getMessage());
-                put("cause", e.getCause() != null ? e.getCause().toString() : "Unknown");
-            }});
+            HashMap<String, String> errorMap = new HashMap<>();
+            errorMap.put("error", "Internal Server Error");
+            errorMap.put("message", "Registration failed: " + e.getMessage());
+            errorMap.put("cause", e.getCause() != null ? e.getCause().toString() : "Unknown");
+            return ResponseEntity.status(500).body(errorMap);
         }
     }
 
@@ -53,10 +52,10 @@ public class AuthController {
             String token = jwtUtil.generateToken(loggedInUser);
             return ResponseEntity.ok(new AuthResponse(token, loggedInUser));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(401).body(new HashMap<String, String>() {{
-                put("error", "Unauthorized");
-                put("message", e.getMessage());
-            }});
+            HashMap<String, String> errorMap = new HashMap<>();
+            errorMap.put("error", "Unauthorized");
+            errorMap.put("message", e.getMessage());
+            return ResponseEntity.status(401).body(errorMap);
         }
     }
 
